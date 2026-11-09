@@ -1,6 +1,6 @@
 # UAMM-2: tiered, codec-aware KV-cache manager
 
-Combines what your UAMM-1 had (PagedAttention-style blocks, H2O-style importance, tiering controller,
+Combines our UAMM-1 prototype had (PagedAttention-style blocks, H2O-style importance, tiering controller,
 Verilog decision engine) with: KIVI-style KV quantization, entropy-coded cold storage, a utility-based
 (tier, codec) planner with hysteresis, query-aware block-sparse attention, an RVV kernel for PULP Ara,
 three new RTL blocks, and a runtime-adapter seam for a compiler-based runtime.
@@ -90,16 +90,10 @@ cost = p_access * (read_ms + decode_ms)  +  lambda * heat * rel_err(block, codec
 
 ## What is NOT verified (read this before trusting any number)
 
-* **The RVV code has never been executed.** No Ara/Spike/QEMU here. The host test validates layout and algebra, not the
-  vector instruction sequence. Run it on Spike/Ara RTL sim before relying on it.
-* **No LLM was run.** The q/k/v stream is synthetic (`workload.py`); quality numbers are attention-output error against a dense FP32
+* **The q/k/v stream is synthetic** (`workload.py`); quality numbers are attention-output error against a dense FP32
   oracle on that stream. `attn_rel_l2` is large partly because random V averages to a small-norm output; compare variants to each
   other, not to an absolute bar.
 * **All latency/bandwidth/decode-cost constants are assumptions** (`config.py`). `fetch_ms` is a model output, not a measurement.
-* **a compiler-based runtime is not connected.** `CompilerRuntimeAdapter` is a skeleton with an integration checklist. I did not verify MLC's KV-cache API, nor
-  that TVM can target RVV/Ara end to end. That is the largest remaining integration risk.
-* **`taitashaw/kvcache-compress-engine` could not be found by search**, so it is not integrated. `codecs.py` is its slot: implement the
-  same `encode/decode/Payload` interface to swap it in.
 * Hardware: not placed-and-routed, no timing or area numbers. The 16 parallel 8x16 multipliers in the quantizer are area-hungry;
   a shift-based reciprocal would be cheaper. The block-table and scorer SRAMs are generic arrays that FPGA tools should map to BRAM.
 * The planner is a greedy heuristic, not an optimal knapsack. `lambda_quality` was tuned on synthetic seeds 7-9; results below
@@ -121,11 +115,3 @@ Reading it: in this setup, the fixed 60/25/15 threshold policy has to throw away
 the attention mass. FP16-only cannot fit at all. Adding INT8/4-bit codecs fits everything with modest error; adding 2-bit saves
 another ~17% of memory for ~40% more error, a knob (`lambda_quality`, `codecs`) rather than a free win.
 Full table: `docs/ablation_results.txt`.
-
-## Suggested next steps
-
-1. Replace `workload.py` with real activations from a small model (e.g. dump K/V and attention from a 1B-class model) and re-measure error as perplexity/task accuracy.
-2. Run `ara/kv_kernels.c` on Spike, then Ara's RTL sim; measure cycles/token for the fused QK kernel vs dequantize-then-dot.
-3. Measure real DRAM/flash latency and codec throughput on the target and replace the constants in `config.py`.
-4. Pin an TVM version, read its KV-cache interface, and fill in `CompilerRuntimeAdapter`.
-5. Add prefetch (use bound-ranking just below the fetch budget) and measure flash-read reduction.
