@@ -1,0 +1,361 @@
+from dataclasses import dataclass
+
+@dataclass
+class Config:
+    block_size: int = 16
+    gpu_capacity: int = 8
+    cpu_capacity: int = 16
+    nvme_capacity: int = 64
+    recent_window_tokens: int = 32
+    alpha: float = 0.60
+    beta: float = 0.25
+    gamma: float = 0.15
+    gpu_threshold: float = 0.68
+    cpu_threshold: float = 0.35
+    simulated_gpu_read_ms: float = 0.02
+    simulated_cpu_read_ms: float = 0.20
+    simulated_nvme_read_ms: float = 4.0
+
+from dataclasses import dataclass
+from .config import Config
+from .paged_cache import KVBlock
+
+@dataclass
+class Decision:
+    score: float
+    target_tier: str
+    evict: bool = False
+
+class UnifiedMemoryController:
+    def __init__(self, config: Config):
+        self.cfg = config
+
+    @staticmethod
+    def _norm(value: float, maximum: float) -> float:
+        return max(0.0, min(1.0, value / maximum if maximum > 0 else 0.0))
+
+    def score(self, block: KVBlock, now: int, max_age: int, max_frequency: int) -> float:
+        importance = self._norm(block.importance, 1.0)
+        age = max(0, now - block.last_access)
+        recency = 1.0 - self._norm(age, max(1, max_age))
+        frequency = self._norm(block.access_count, max(1, max_frequency))
+        return (self.cfg.alpha * importance +
+                self.cfg.beta * recency +
+                self.cfg.gamma * frequency)
+
+    def decide(self, block: KVBlock, now: int, max_age: int, max_frequency: int,
+               pressure: float) -> Decision:
+        score = self.score(block, now, max_age, max_frequency)
+        if score >= self.cfg.gpu_threshold:
+            tier = "gpu"
+        elif score >= self.cfg.cpu_threshold:
+            tier = "cpu"
+        else:
+            tier = "nvme"
+        evict = pressure >= 0.95 and score < self.cfg.cpu_threshold and not block.protected
+        return Decision(score, tier, evict)
+
+from collections import defaultdict
+from typing import Dict, Iterable
+from .paged_cache import PagedKVCache
+
+class H2OImportanceTracker:
+    """H2O-inspired heavy-hitter tracker using supplied attention weights."""
+    def __init__(self, cache: PagedKVCache, decay: float = 0.9, aggregation: str = "mean"):
+        if not 0.0 <= decay <= 1.0:
+            raise ValueError("decay must be in [0,1]")
+        if aggregation not in {"mean", "sum", "max"}:
+            raise ValueError("aggregation must be mean, sum or max")
+        self.cache, self.decay, self.aggregation = cache, decay, aggregation
+        self.token_scores: Dict[int, float] = defaultdict(float)
+
+    def update(self, attention_by_token: Dict[int, float]) -> None:
+        for token_id in list(self.token_scores):
+            self.token_scores[token_id] *= self.decay
+        for token_id, weight in attention_by_token.items():
+            if token_id in self.cache.token_to_block:
+                self.token_scores[token_id] += max(0.0, float(weight))
+
+        grouped = defaultdict(list)
+        for token_id, block_id in self.cache.token_to_block.items():
+            grouped[block_id].append(self.token_scores[token_id])
+        for block_id, values in grouped.items():
+            block = self.cache.get_block(block_id)
+            if not values:
+                block.importance = 0.0
+            elif self.aggregation == "sum":
+                block.importance = sum(values)
+            elif self.aggregation == "max":
+                block.importance = max(values)
+            else:
+                block.importance = sum(values) / len(values)
+
+    def block_importance(self, block_id: int) -> float:
+        return self.cache.get_block(block_id).importance
+
+import argparse
+import json
+from .config import Config
+from .simulator import UAMMSimulator
+
+def main():
+    p = argparse.ArgumentParser(description="UAMM reference simulator")
+    p.add_argument("--tokens", type=int, default=512)
+    p.add_argument("--block-size", type=int, default=16)
+    p.add_argument("--gpu-blocks", type=int, default=8)
+    p.add_argument("--cpu-blocks", type=int, default=16)
+    p.add_argument("--nvme-blocks", type=int, default=64)
+    args = p.parse_args()
+    cfg = Config(block_size=args.block_size, gpu_capacity=args.gpu_blocks,
+                 cpu_capacity=args.cpu_blocks, nvme_capacity=args.nvme_blocks)
+    sim = UAMMSimulator(cfg)
+    metrics = sim.run(args.tokens)
+    print("UAMM simulation complete (metadata simulator; not real LLM inference)")
+    print("Tier occupancy:", json.dumps(sim.tiers.snapshot(), indent=2))
+    print("Metrics:", json.dumps(metrics.as_dict(), indent=2))
+
+if __name__ == "__main__":
+    main()
+
+from collections import defaultdict
+
+class MemoryTiers:
+    """Capacity and transfer-cost simulator; no real GPU/CPU/NVMe data movement."""
+    def __init__(self, gpu_capacity: int, cpu_capacity: int, nvme_capacity: int):
+        self.capacity = {"gpu": gpu_capacity, "cpu": cpu_capacity, "nvme": nvme_capacity}
+        self.blocks = {"gpu": set(), "cpu": set(), "nvme": set()}
+        self.transfer_count = 0
+        self.eviction_count = 0
+
+    def tier_of(self, block_id: int):
+        for tier, ids in self.blocks.items():
+            if block_id in ids:
+                return tier
+        return None
+
+    def occupancy(self, tier: str) -> int:
+        return len(self.blocks[tier])
+
+    def has_space(self, tier: str) -> bool:
+        return self.occupancy(tier) < self.capacity[tier]
+
+    def place(self, block_id: int, tier: str) -> bool:
+        if tier not in self.blocks:
+            raise ValueError(f"unknown tier {tier}")
+        current = self.tier_of(block_id)
+        if current == tier:
+            return True
+        if not self.has_space(tier):
+            return False
+        if current:
+            self.blocks[current].remove(block_id)
+            self.transfer_count += 1
+        self.blocks[tier].add(block_id)
+        return True
+
+    def remove(self, block_id: int):
+        tier = self.tier_of(block_id)
+        if tier:
+            self.blocks[tier].remove(block_id)
+            self.eviction_count += 1
+
+    def all_ids(self):
+        return set().union(*self.blocks.values())
+
+    def snapshot(self):
+        return {tier: len(ids) for tier, ids in self.blocks.items()}
+
+from dataclasses import dataclass, asdict
+
+@dataclass
+class Metrics:
+    simulated_ttft_ms: float
+    simulated_itl_ms: float
+    simulated_throughput_tokens_s: float
+    peak_gpu_blocks: int
+    cpu_nvme_transfers: int
+    evictions: int
+
+    def as_dict(self):
+        return asdict(self)
+
+from dataclasses import dataclass, field
+from typing import Dict, List
+
+@dataclass
+class KVBlock:
+    block_id: int
+    token_ids: List[int] = field(default_factory=list)
+    tier: str = "gpu"
+    importance: float = 0.0
+    recency: float = 0.0
+    frequency: float = 0.0
+    last_access: int = 0
+    access_count: int = 0
+    protected: bool = False
+
+class PagedKVCache:
+    """Logical fixed-size KV block allocator; stores metadata, not actual tensors."""
+    def __init__(self, block_size: int):
+        if block_size <= 0:
+            raise ValueError("block_size must be positive")
+        self.block_size = block_size
+        self.blocks: Dict[int, KVBlock] = {}
+        self.token_to_block: Dict[int, int] = {}
+        self._next_id = 0
+
+    def append_token(self, token_id: int) -> KVBlock:
+        if token_id in self.token_to_block:
+            raise ValueError(f"duplicate token id: {token_id}")
+        if not self.blocks or len(next(reversed(self.blocks.values())).token_ids) >= self.block_size:
+            block = KVBlock(self._next_id)
+            self.blocks[self._next_id] = block
+            self._next_id += 1
+        else:
+            block = next(reversed(self.blocks.values()))
+        block.token_ids.append(token_id)
+        self.token_to_block[token_id] = block.block_id
+        return block
+
+    def get_block(self, block_id: int) -> KVBlock:
+        return self.blocks[block_id]
+
+    def remove_block(self, block_id: int) -> None:
+        block = self.blocks.pop(block_id)
+        for token_id in block.token_ids:
+            self.token_to_block.pop(token_id, None)
+
+    def __len__(self):
+        return len(self.blocks)
+
+"""Extension points for real inference runtimes.
+
+The simulator intentionally does not pretend to patch vLLM internals. A production
+adapter must be written against the exact pinned vLLM version and its supported
+interfaces. Attention-score access and KV block migration are backend-dependent.
+"""
+
+class RuntimeAdapter:
+    def load_model(self):
+        raise NotImplementedError
+
+      def allocate_kv_block(self, sequence_id, logical_block_id):
+          raise NotImplementedError
+
+      def get_attention_importance(self, sequence_id):
+          """Return {token_id: attention_weight}; backend must expose this safely."""
+          raise NotImplementedError
+
+      def migrate_kv_block(self, block_id, source_tier, destination_tier):
+          """Perform real, synchronized tensor movement and update ownership metadata."""
+          raise NotImplementedError
+
+class SmoothQuantAdapter:
+    """Hook point for a calibrated SmoothQuant INT8 model artifact."""
+    def load_quantized_model(self, model_path):
+        raise NotImplementedError("Connect a tested SmoothQuant-compatible runtime here.")
+
+import random
+from .paged_cache import PagedKVCache
+from .h2o import H2OImportanceTracker
+from .controller import UnifiedMemoryController
+from .memory_tiers import MemoryTiers
+from .metrics import Metrics
+
+class UAMMSimulator:
+    def __init__(self, config):
+        self.cfg = config
+        self.cache = PagedKVCache(config.block_size)
+        self.h2o = H2OImportanceTracker(self.cache)
+        self.controller = UnifiedMemoryController(config)
+        self.tiers = MemoryTiers(config.gpu_capacity, config.cpu_capacity, config.nvme_capacity)
+        self.tick = 0
+        self.peak_gpu = 0
+        self.latency_ms = 0.0
+
+      def _ensure_capacity(self, target: str, incoming_id: int):
+          if self.tiers.has_space(target):
+              return True
+          # Demote the least valuable, unprotected resident block to a slower tier.
+          candidates = []
+          for block_id in self.tiers.blocks[target]:
+              b = self.cache.get_block(block_id)
+              if not b.protected and block_id != incoming_id:
+                  candidates.append((b.importance + b.recency * 0.01, block_id))
+          if not candidates:
+              return False
+          _, victim_id = min(candidates)
+          fallback = "cpu" if target == "gpu" else "nvme"
+          if fallback == "nvme" and not self.tiers.has_space("nvme"):
+              self.tiers.remove(victim_id)
+              self.cache.remove_block(victim_id)
+              return self.tiers.has_space(target)
+          if self.tiers.place(victim_id, fallback):
+              self.cache.get_block(victim_id).tier = fallback
+        return self.tiers.has_space(target)
+    return False
+
+def _place(self, block, target):
+    current = self.tiers.tier_of(block.block_id)
+    if current == target:
+        return
+    if not self._ensure_capacity(target, block.block_id):
+        # Try slower tier as a safe fallback.
+        for fallback in (("cpu", "nvme") if target == "gpu" else ("nvme",)):
+            if self._ensure_capacity(fallback, block.block_id) and self.tiers.place(block.block_id, fallback):
+                block.tier = fallback
+                return
+        return
+    self.tiers.place(block.block_id, target)
+    block.tier = target
+
+def run(self, token_count: int):
+    if token_count <= 0:
+        raise ValueError("token_count must be positive")
+    random.seed(7)
+    for token in range(token_count):
+        self.tick += 1
+        block = self.cache.append_token(token)
+        if self.tiers.tier_of(block.block_id) is None:
+            self._place(block, "gpu")
+        # Simulated attention: recent tokens plus a few persistent heavy hitters.
+        attention = {}
+        start = max(0, token - self.cfg.recent_window_tokens)
+        for old_token in range(start, token + 1):
+            attention[old_token] = random.random() * (1.0 if old_token > token - 8 else 0.15)
+        if token > 0:
+            attention[0] = attention.get(0, 0.0) + 0.8
+        self.h2o.update(attention)
+
+        for b in self.cache.blocks.values():
+            b.protected = bool(b.token_ids and b.token_ids[-1] >= token - self.cfg.recent_window_tokens)
+            b.recency = 1.0 / (1.0 + max(0, token - b.last_access))
+        # Touch blocks in the current attention window.
+        for tok in attention:
+            bid = self.cache.token_to_block.get(tok)
+            if bid is not None:
+                b = self.cache.get_block(bid)
+                b.access_count += 1
+                b.last_access = token
+                tier = self.tiers.tier_of(bid)
+                if tier == "cpu":
+                    self.latency_ms += self.cfg.simulated_cpu_read_ms
+                elif tier == "nvme":
+                    self.latency_ms += self.cfg.simulated_nvme_read_ms
+                else:
+                    self.latency_ms += self.cfg.simulated_gpu_read_ms
+
+        pressure = self.tiers.occupancy("gpu") / max(1, self.cfg.gpu_capacity)
+        max_freq = max((b.access_count for b in self.cache.blocks.values()), default=1)
+        for b in list(self.cache.blocks.values()):
+            decision = self.controller.decide(b, token, max(1, token_count), max_freq, pressure)
+            if not b.protected:
+                self._place(b, decision.target_tier)
+    self.peak_gpu = max(self.peak_gpu, self.tiers.occupancy("gpu"))
+
+# Simulated aggregate metrics only; no real model tokens were generated.
+ttft = 5.0 + self.cfg.block_size * 0.03
+itl = self.latency_ms / token_count if token_count else 0.0
+elapsed = max(0.001, ttft + self.latency_ms)
+return Metrics(ttft, itl, token_count / (elapsed / 1000.0),
+               self.peak_gpu, self.tiers.transfer_count, self.tiers.eviction_count)

@@ -1,0 +1,6 @@
+/usr/local/lib/python3.13/site-packages/verilator/bin/verilator --binary --timing -Wno-fatal -Wno-lint -CFLAGS "-std=c++20 -fcoroutines" --top-module tb_sweep_scorer -Mdir build/sweep_scorer rtl/uamm_sweep_scorer.v tb/tb_sweep_scorer.v -o sim >build/sweep_scorer.log 2>&1 || (cat build/sweep_scorer.log; exit 1)
+TB_SWEEP_SCORER PASS checks=1088
+/usr/local/lib/python3.13/site-packages/verilator/bin/verilator --binary --timing -Wno-fatal -Wno-lint -CFLAGS "-std=c++20 -fcoroutines" --top-module tb_kv_codec -Mdir build/kv_codec rtl/uamm_kv_codec.v tb/tb_kv_codec.v -o sim >build/kv_codec.log 2>&1 || (cat build/kv_codec.log; exit 1)
+TB_KV_CODEC PASS vectors=400
+/usr/local/lib/python3.13/site-packages/verilator/bin/verilator --binary --timing -Wno-fatal -Wno-lint -CFLAGS "-std=c++20 -fcoroutines" --top-module tb_block_table -Mdir build/block_table rtl/uamm_block_table.v tb/tb_block_table.v -o sim >build/block_table.log 2>&1 || (cat build/block_table.log; exit 1)
+TB_BLOCK_TABLE PASS writes=3049 reads=2971 hits=2313

@@ -1,0 +1,15 @@
+mutation                           result
+W_IMP 154 -> 153                   KILLED (testbench FAIL)
+W_FRQ 38 -> 40                     KILLED (testbench FAIL)
+TH_HOT 174 -> 175                  KILLED (testbench FAIL)
+TH_WARM 89 -> 88                   KILLED (testbench FAIL)
+EVICT_P 243 -> 244                 KILLED (testbench FAIL)
+tier ignores protected             KILLED (testbench FAIL)
+evict ignores protected            KILLED (testbench FAIL)
+quant: drop +2048 rounding         KILLED (testbench FAIL)
+quant: remove clamp at 15          KILLED (testbench FAIL)
+dequant: drop +128 rounding        KILLED (testbench FAIL)
+dequant: remove saturation at 255  KILLED (testbench FAIL)
+valid bit write disabled           KILLED (testbench FAIL)
+
+12/12 mutants killed

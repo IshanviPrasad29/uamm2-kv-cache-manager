@@ -1,0 +1,8 @@
+variant                    resident/fp16    dropped_tok    rel_l2_mean     rel_l2_p95    mass_recall  fetch_ms/tok*     migrations    flash_reads     overflow_B
+v1_threshold_fp16                 0.3438           1008        0.53205        1.56663        0.73656         0.9577            754          13117              0
+v2_planner_fp16                      1.0              0        0.09095        0.30989        0.93771         1.0451            601          14421         256000
+v2_planner_int8_kivi4             0.3669              0        0.12331        0.34672        0.93771        0.11995            710           1035              0
+v2_planner_all_codecs              0.307              0        0.18261        0.59949        0.93771        0.11668            650            989              0
+v2_all_codecs_with_drop            0.307              0        0.18261        0.59949        0.93771        0.11668            650            989              0
+* simulated with assumed latency constants; synthetic workload.
+overflow_B > 0 means the variant could not fit the data in the tier budget (infeasible without dropping).

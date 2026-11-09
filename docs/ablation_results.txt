@@ -1,0 +1,8 @@
+Ablation, 1536 tokens, mean over HELD-OUT seeds (11, 12, 13) (lambda tuned on seeds 7-9)
+variant                     resident/fp16    dropped_tok    rel_l2_mean     rel_l2_p95    mass_recall      fetch_ms*    flash_reads     overflow_B
+v1_threshold_fp16                  0.3681          970.7         0.5055          1.359         0.7502         0.9191      1.256e+04              0
+v2_planner_fp16                         1              0         0.0814         0.2916         0.9454           1.04      1.435e+04      2.567e+05
+v2_planner_int8_kivi4              0.3721              0         0.1157         0.3275         0.9454         0.1153          966.3              0
+v2_planner_all_codecs              0.3096              0         0.1592         0.5361         0.9454         0.1112          907.7              0
+v2_all_codecs_with_drop            0.3096              0         0.1592         0.5361         0.9454         0.1112          907.7              0
+* fetch_ms is simulated with ASSUMED latency constants on a SYNTHETIC workload; overflow_B>0 = infeasible within tier budget

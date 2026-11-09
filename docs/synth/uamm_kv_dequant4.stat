@@ -1,0 +1,26 @@
+
+5. Printing statistics.
+
+=== uamm_kv_dequant4 ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     4996 wires
+     5388 wire bits
+       12 public wires
+      404 public wire bits
+        8 ports
+      220 port bits
+     5241 cells
+       29   $_ANDNOT_
+     1251   $_AND_
+      128   $_DFFE_PN0P_
+        1   $_DFF_PN0_
+     2150   $_NAND_
+       14   $_NOR_
+        4   $_NOT_
+       25   $_ORNOT_
+      275   $_OR_
+      382   $_XNOR_
+      982   $_XOR_
+

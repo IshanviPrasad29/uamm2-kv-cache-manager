@@ -1,0 +1,17 @@
+/usr/local/lib/python3.13/site-packages/verilator/bin/verilator --lint-only -Wall -Wno-DECLFILENAME --top-module uamm_sweep_scorer rtl/uamm_sweep_scorer.v
+- V e r i l a t i o n   R e p o r t:  rev vUNKNOWN-built20260516-4e853d8
+- Verilator: Built from 0.035 MB sources in 2 modules, into 0.021 MB in 3 C++ files needing 0.000 MB
+- Verilator: Walltime 0.013 s (elab=0.001, cvt=0.008, bld=0.000); cpu 0.009 s on 1 threads; allocated 20.539 MB
+/usr/local/lib/python3.13/site-packages/verilator/bin/verilator --lint-only -Wall -Wno-DECLFILENAME --top-module uamm_kv_quant4 rtl/uamm_kv_codec.v
+- V e r i l a t i o n   R e p o r t:  rev vUNKNOWN-built20260516-4e853d8
+- Verilator: Built from 0.034 MB sources in 3 modules, into 0.045 MB in 3 C++ files needing 0.000 MB
+- Verilator: Walltime 0.027 s (elab=0.001, cvt=0.011, bld=0.000); cpu 0.013 s on 1 threads; allocated 20.680 MB
+/usr/local/lib/python3.13/site-packages/verilator/bin/verilator --lint-only -Wall -Wno-DECLFILENAME --top-module uamm_kv_dequant4 rtl/uamm_kv_codec.v
+- V e r i l a t i o n   R e p o r t:  rev vUNKNOWN-built20260516-4e853d8
+- Verilator: Built from 0.034 MB sources in 3 modules, into 0.037 MB in 3 C++ files needing 0.000 MB
+- Verilator: Walltime 0.008 s (elab=0.001, cvt=0.004, bld=0.000); cpu 0.008 s on 1 threads; allocated 20.609 MB
+/usr/local/lib/python3.13/site-packages/verilator/bin/verilator --lint-only -Wall -Wno-DECLFILENAME --top-module uamm_block_table rtl/uamm_block_table.v
+- V e r i l a t i o n   R e p o r t:  rev vUNKNOWN-built20260516-4e853d8
+- Verilator: Built from 0.033 MB sources in 2 modules, into 0.012 MB in 3 C++ files needing 0.000 MB
+- Verilator: Walltime 0.006 s (elab=0.001, cvt=0.002, bld=0.000); cpu 0.006 s on 1 threads; allocated 20.418 MB
+lint exit=0

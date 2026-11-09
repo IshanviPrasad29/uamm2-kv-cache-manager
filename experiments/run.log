@@ -1,0 +1,16 @@
+saved e1_ablation
+saved e2_context_scaling
+saved e3_budget
+saved e4_lambda
+saved e4_hysteresis
+saved e4_residency
+saved e4_interval
+saved e4_decay
+saved e4_aggregation
+saved e4_blocksize
+saved e5_capacity
+saved e5b_codecsets
+saved e6_traces
+saved e7_codecs
+saved e8_attention
+done in 284.9s

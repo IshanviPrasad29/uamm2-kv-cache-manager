@@ -1,0 +1,6 @@
+case  tokens  dim  max|C-kernel - numpy dequant.dot|
+   0      16   64  5.72e-06
+   1      32   64  4.77e-06
+   2      16  128  2.00e-05
+   3      64   64  6.68e-06
+RVV compile check (clang riscv64 rv64gcv): OK -> kv_kernels_rvv.o 2856 bytes (object only, NOT executed)

@@ -1,0 +1,28 @@
+
+5. Printing statistics.
+
+=== uamm_block_table ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     8674 wires
+    12840 wire bits
+      272 public wires
+     4407 public wire bits
+       15 ports
+       55 port bits
+    12796 cells
+       97   $_ANDNOT_
+     1543   $_AND_
+      273   $_DFFE_PN0P_
+     4096   $_DFFE_PP_
+        1   $_DFF_PN0_
+     3155   $_MUX_
+     2356   $_NAND_
+       43   $_NOR_
+       12   $_NOT_
+      673   $_ORNOT_
+      539   $_OR_
+        6   $_XNOR_
+        2   $_XOR_
+
