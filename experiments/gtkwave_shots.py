@@ -1,4 +1,5 @@
 """Drive the real GTKWave (under Xvfb) on the Verilator VCD dumps and capture screenshots."""
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 import subprocess, sys, time, os, vcdvcd
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
@@ -23,7 +24,8 @@ def shot(vcd, name, sigs, t0, t1, marker, dec=()):
     tcl.write_text("\n".join(lines) + "\n")
     png = OUT / f"{name}.png"
     H = 190 + 24 * len(sigs)
-    cmd = (f"gtkwave -S {tcl} {vcd} >/dev/null 2>&1 & GP=$!; sleep 4; "
+    rel = lambda q: os.path.relpath(q, ROOT_DIR)
+    cmd = (f"cd {ROOT_DIR} && gtkwave -S {rel(tcl)} {rel(vcd)} >/dev/null 2>&1 & GP=$!; sleep 4; "
            f"WID=$(xdotool search --name GTKWave | head -1); xdotool windowmove $WID 0 0; xdotool windowsize $WID 1500 {H}; sleep 4; "
            f"import -window root {png}; kill $GP")
     subprocess.run(["xvfb-run", "-a", "-s", f"-screen 0 1500x{H}x24", "bash", "-c", cmd], check=False)

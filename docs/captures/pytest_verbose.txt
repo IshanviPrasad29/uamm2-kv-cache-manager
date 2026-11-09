@@ -1,7 +1,7 @@
 ============================= test session starts ==============================
 platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python
 cachedir: .pytest_cache
-rootdir: /home/claude/uamm2_project
+rootdir: ~/Downloads/uamm2
 plugins: platformdirs-4.13.5, anyio-4.15.1
 collecting ... collected 56 items
 
