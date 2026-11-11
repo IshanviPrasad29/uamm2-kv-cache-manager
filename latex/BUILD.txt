@@ -1,0 +1,3 @@
+Works with pdfLaTeX, XeLaTeX and LuaLaTeX.
+Local build: pdflatex UAMM2_Report.tex; makeindex UAMM2_Report.idx; makeglossaries UAMM2_Report; pdflatex UAMM2_Report.tex (twice)
+Keep the figs/ folder next to the .tex file (it includes the Turnitin pages).

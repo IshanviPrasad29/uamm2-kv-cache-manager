@@ -1,8 +1,11 @@
-variant                    resident/fp16    dropped_tok    rel_l2_mean     rel_l2_p95    mass_recall  fetch_ms/tok*     migrations    flash_reads     overflow_B
-v1_threshold_fp16                 0.3438           1008        0.53205        1.56663        0.73656         0.9577            754          13117              0
-v2_planner_fp16                      1.0              0        0.09095        0.30989        0.93771         1.0451            601          14421         256000
-v2_planner_int8_kivi4             0.3669              0        0.12331        0.34672        0.93771        0.11995            710           1035              0
-v2_planner_all_codecs              0.307              0        0.18261        0.59949        0.93771        0.11668            650            989              0
-v2_all_codecs_with_drop            0.307              0        0.18261        0.59949        0.93771        0.11668            650            989              0
+variant                     res/fp16   res+summ    dropped    l2_mean     l2_p95     recall  fetch_ms*       migr   flash_rd overflow_B
+v1_threshold_fp16             0.3438     0.3867       1008    0.53205    1.56663    0.73656     0.9577        754      13117          0
+v1_capacity_aware_fp16        0.4062      0.457        912    0.42613    1.27299    0.78411      0.653        982       8710          0
+static_kivi4_no_planner       0.3643     0.4893          0     0.1525       0.35    0.93771    0.07805        729        417          0
+static_kivi2_no_planner       0.2432     0.3682          0    0.59226     1.0481    0.93771     0.0493        338          0          0
+v2_planner_fp16                  1.0      1.125          0    0.09095    0.30989    0.93771     1.0451        601      14421     256000
+v2_planner_int8_kivi4         0.3669     0.4919          0    0.12331    0.34672    0.93771    0.11995        710       1035          0
+v2_planner_all_codecs          0.307      0.432          0    0.18261    0.59949    0.93771    0.11668        650        989          0
+v2_all_codecs_with_drop        0.307      0.432          0    0.18261    0.59949    0.93771    0.11668        650        989          0
 * simulated with assumed latency constants; synthetic workload.
 overflow_B > 0 means the variant could not fit the data in the tier budget (infeasible without dropping).

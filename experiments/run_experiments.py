@@ -121,7 +121,16 @@ def main():
         c = cap_t(f)
         return replace(c, policy="threshold", codecs=("fp16",), use_entropy_coding=False)
     factors = (0.5, 0.75, 1.0, 1.5, 2.0, 3.0)
+    def cap_with(name):
+        def f(fac):
+            c = cap_t(fac)
+            return replace(V[name], tiers=c.tiers)
+        return f
     e5 = {"v2": sweep("cap", factors, cap_t), "v1": sweep("cap", factors, cap_v1)}
+    # fair baselines at every capacity: UAMM-1 made capacity-aware, FP16-only planner, no-planner 4-bit
+    for key, name in (("v1_capacity_aware", "v1_capacity_aware_fp16"), ("v2_fp16_only", "v2_planner_fp16"),
+                      ("static_kivi4", "static_kivi4_no_planner")):
+        e5[key] = sweep("cap", factors, cap_with(name))
     save("e5_capacity", e5)
 
     # E5b: codec set study (which codecs enabled)
@@ -137,6 +146,28 @@ def main():
     for (name, ent), r in zip(keys, pmap(jobs)):
         e5b.setdefault(f"{name}|entropy={ent}", []).append(r)
     save("e5b_codecsets", e5b)
+
+    # E9: key summaries charged to the budget (total 168 KB = tiers + summaries, i.e. tiers x 0.857 at 1536 tokens)
+    f_sum = (172032 - 96 * 256) / 172032
+    jobs, keys = [], []
+    for name, cfg in V.items():
+        c = cap_t(f_sum)
+        for s_ in SEEDS:
+            jobs.append((replace(cfg, tiers=c.tiers), 1536, s_, False)); keys.append(name)
+    e9 = {}
+    for name, r in zip(keys, pmap(jobs)):
+        e9.setdefault(name, []).append(r)
+    save("e9_summary_charged", {"factor": f_sum, "variants": e9})
+
+    # E10: no-planner baselines against the planner over its trade-off knob (lambda)
+    e10 = {"planner_all_codecs": sweep("lambda_quality", (0.0, 0.5, 2.0, 8.0, 32.0)),
+           "planner_int8_kivi4": sweep("lambda_quality", (0.0, 0.5, 2.0, 8.0, 32.0),
+                                       lambda v: replace(V["v2_planner_int8_kivi4"], lambda_quality=v))}
+    for name in ("static_kivi4_no_planner", "static_kivi2_no_planner"):
+        e10[name] = sweep("static", (0,), lambda v, n=name: V[n])
+    e10["static_int8_no_planner"] = sweep("static", (0,), lambda v: replace(
+        base, policy="static", static_codec="int8", codecs=("fp16", "int8"), use_entropy_coding=False))
+    save("e10_static_vs_planner", e10)
 
     # E6: time-series traces (v1 vs v2) with one seed
     tr = pmap([(V["v1_threshold_fp16"], 1536, 11, True), (V["v2_planner_all_codecs"], 1536, 11, True),

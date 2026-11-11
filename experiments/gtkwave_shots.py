@@ -1,5 +1,5 @@
 """Drive the real GTKWave (under Xvfb) on the Verilator VCD dumps and capture screenshots."""
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import pathlib; ROOT_DIR = str(pathlib.Path(__file__).resolve().parents[1])
 import subprocess, sys, time, os, vcdvcd
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent

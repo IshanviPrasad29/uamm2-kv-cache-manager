@@ -136,6 +136,7 @@ class Simulator:
         live = [b for b in blocks if not b.dropped]
         used = usage(cfg, blocks)
         resident = sum(used)
+        summary_bytes = sum(b.kmin.nbytes + b.kmax.nbytes for b in live if b.kmin is not None)
         fp16_total = n_tokens * d * 2 * 2
         tier_blocks = Counter(b.tier for b in live)
         codecs = Counter(b.codec for b in live)
@@ -147,6 +148,8 @@ class Simulator:
             "fp16_kv_bytes": fp16_total,
             "resident_bytes": resident,
             "resident_vs_fp16": round(resident / fp16_total, 4),
+            "key_summary_bytes": summary_bytes,
+            "resident_with_summaries_vs_fp16": round((resident + summary_bytes) / fp16_total, 4),
             "tier_bytes": {cfg.tiers[i].name: used[i] for i in range(len(used))},
             "tier_blocks": {cfg.tiers[i].name: tier_blocks.get(i, 0) for i in range(len(used))},
             "codec_blocks": dict(sorted(codecs.items())),

@@ -15,10 +15,32 @@ RES = ROOT / "experiments" / "results"
 FIG = ROOT / "docs" / "figs"
 FIG.mkdir(parents=True, exist_ok=True)
 
+# ---- black / white / grey style: every colour used below is mapped to a grey level and each grey gets its own line style
+import matplotlib.colors as _mc
+import matplotlib.axes as _ax
+GREY_MAP = {"#1f77b4": "#e2e2e2", "#ff7f0e": "#a6a6a6", "#2ca02c": "#5a5a5a", "#d62728": "#111111", "#9467bd": "#808080", "#8c564b": "#cfcfcf", "#c53030": "#9a9a9a", "#e53e3e": "#c4c4c4", "#b7791f": "#666666", "#d69e2e": "#8a8a8a", "#718096": "#d9d9d9",
+            "#222222": "#3a3a3a", "#2f855a": "#000000", "#6b46c1": "#777777", "#c05621": "#b0b0b0"}
+_orig = _mc._to_rgba_no_colorcycle
+def _grey(c, alpha=None):
+    if isinstance(c, str) and c.lower() in GREY_MAP:
+        c = GREY_MAP[c.lower()]
+    return _orig(c, alpha)
+_mc._to_rgba_no_colorcycle = _grey
+_LS = {"#000000": "-", "#3a3a3a": "--", "#666666": "-.", "#777777": ":", "#8a8a8a": (0, (6, 2)), "#9a9a9a": (0, (1, 1.5)), "#b0b0b0": (0, (3, 1, 1, 1))}
+_oplot = _ax.Axes.plot
+def _plot(self, *a, **k):
+    c = k.get("color", k.get("c"))
+    if isinstance(c, str) and "ls" not in k and "linestyle" not in k and c.lower() in GREY_MAP:
+        k["linestyle"] = _LS.get(GREY_MAP[c.lower()], "-")
+    return _oplot(self, *a, **k)
+_ax.Axes.plot = _plot
 PAL = {"v1": "#c53030", "v2fp16": "#718096", "v2i8": "#222222", "v2all": "#2f855a", "drop": "#b7791f",
        "t0": "#2f855a", "t1": "#222222", "t2": "#6b46c1", "t3": "#c05621"}
-plt.rcParams.update({"font.size": 9, "axes.grid": True, "grid.alpha": 0.25, "axes.spines.top": False,
-                     "axes.spines.right": False, "figure.dpi": 100})
+plt.rcParams.update({"font.size": 11.5, "axes.labelsize": 11.5, "axes.titlesize": 12, "xtick.labelsize": 10.5, "ytick.labelsize": 10.5,
+                     "legend.fontsize": 10, "axes.grid": True, "grid.alpha": 0.2, "grid.color": "#888888", "axes.spines.top": False,
+                     "axes.spines.right": False, "figure.dpi": 100, "font.family": "serif", "axes.edgecolor": "#222222",
+                     "patch.edgecolor": "#111111", "patch.linewidth": 0.7, "patch.force_edgecolor": True, "lines.linewidth": 1.8,
+                     "lines.markersize": 6.5, "axes.prop_cycle": __import__("cycler").cycler(color=["#111111", "#555555", "#888888", "#bbbbbb", "#dddddd"])})
 
 
 def load(name):
@@ -54,11 +76,11 @@ def f_kv_growth():
         ax.plot(ctx, kv_bytes_per_token(L, H, D) * ctx / 2 ** 30, marker="o", ms=3.5, label=name, color=col)
     for gb, lab in ((2, "2 GB"), (4, "4 GB"), (8, "8 GB")):
         ax.axhline(gb, color="gray", ls="--", lw=0.8)
-        ax.text(1100, gb * 1.08, f"{lab} free DRAM", fontsize=7.5, color="gray")
+        ax.text(1100, gb * 1.08, f"{lab} free DRAM", fontsize=9.8, color="gray")
     ax.set_xscale("log", base=2); ax.set_yscale("log")
     ax.set_xlabel("context length (tokens)"); ax.set_ylabel("KV cache size, FP16 (GiB, one sequence)")
     ax.set_title("KV cache growth with context length (batch = 1)")
-    ax.legend(fontsize=7.5, loc="upper left")
+    ax.legend(fontsize=9.8, loc="upper left")
     save(fig, "f01_kv_growth.png")
 
 
@@ -68,12 +90,12 @@ def f_kv_bandwidth():
     bw = 12.8e9
     for (name, (L, H, D)), col in zip(MODELS.items(), ["#2f855a", "#222222", "#6b46c1", "#c53030"]):
         ax.plot(ctx, bw / (kv_bytes_per_token(L, H, D) * ctx), marker="o", ms=3.5, label=name, color=col)
-    ax.axhline(10, color="gray", ls="--", lw=0.8); ax.text(1100, 11, "10 tokens/s", fontsize=7.5, color="gray")
+    ax.axhline(10, color="gray", ls="--", lw=0.8); ax.text(1100, 11, "10 tokens/s", fontsize=9.8, color="gray")
     ax.set_xscale("log", base=2); ax.set_yscale("log")
     ax.set_xlabel("context length (tokens)")
     ax.set_ylabel("upper bound on decode tokens/s from KV reads alone")
     ax.set_title("Dense attention reads the whole KV cache every token\n(12.8 GB/s DRAM, weights and compute ignored)")
-    ax.legend(fontsize=7.5, loc="lower left")
+    ax.legend(fontsize=9.8, loc="lower left")
     save(fig, "f02_kv_bandwidth_bound.png")
 
 
@@ -86,11 +108,11 @@ def f_kv_compression_effect():
                             ("4-bit KIVI-style (~0.34x measured here)", 0.344, "#2f855a"),
                             ("2-bit KIVI-style (~0.22x measured here)", 0.219, "#6b46c1")):
         ax.plot(ctx, base * ratio, marker="o", ms=3.5, label=lab, color=col)
-    ax.axhline(4, color="gray", ls="--", lw=0.8); ax.text(4200, 4.2, "4 GB budget", fontsize=7.5, color="gray")
+    ax.axhline(4, color="gray", ls="--", lw=0.8); ax.text(4200, 4.2, "4 GB budget", fontsize=9.8, color="gray")
     ax.set_xscale("log", base=2); ax.set_yscale("log")
     ax.set_xlabel("context length (tokens)"); ax.set_ylabel("KV size (GiB)")
     ax.set_title("Effect of KV quantization on the memory wall (Llama-3-8B-like geometry)")
-    ax.legend(fontsize=7.5)
+    ax.legend(fontsize=9.8)
     save(fig, "f03_quant_effect_memory_wall.png")
 
 
@@ -120,40 +142,41 @@ def f_coverage_matrix():
         [2, 2, 1, 2, 2, 2, 2, 1, 2, 1],   # UAMM-2
     ])
     fig, ax = plt.subplots(figsize=(9.2, 6.4))
-    ax.imshow(M, cmap="Greens", vmin=0, vmax=2.4, aspect="auto")
-    ax.set_xticks(range(len(caps))); ax.set_xticklabels(caps, fontsize=7.5)
-    ax.set_yticks(range(len(methods))); ax.set_yticklabels(methods, fontsize=8)
+    ax.imshow(M, cmap="Greys", vmin=0, vmax=2.4, aspect="auto")
+    ax.set_xticks(range(len(caps))); ax.set_xticklabels(caps, fontsize=9.8)
+    ax.set_yticks(range(len(methods))); ax.set_yticklabels(methods, fontsize=10.4)
     ax.xaxis.tick_top()
     for i in range(M.shape[0]):
         for j in range(M.shape[1]):
-            ax.text(j, i, ["", "o", "#"][M[i, j]], ha="center", va="center", fontsize=9,
+            ax.text(j, i, ["", "o", "#"][M[i, j]], ha="center", va="center", fontsize=11.7,
                     color="white" if M[i, j] == 2 else "black")
     ax.set_xticks(np.arange(-.5, len(caps)), minor=True); ax.set_yticks(np.arange(-.5, len(methods)), minor=True)
     ax.grid(which="minor", color="white", lw=1.5); ax.grid(which="major", visible=False)
     ax.tick_params(which="both", length=0)
-    ax.set_title("Capability coverage of related work   (# = main contribution, o = partial/supported)", pad=40, fontsize=10)
+    ax.set_title("Capability coverage of related work   (# = main contribution, o = partial/supported)", pad=40, fontsize=13.0)
     save(fig, "f04_coverage_matrix.png")
 
 
 # ===================================================================== results
 def f_ablation():
     e1 = load("e1_ablation")
-    names = ["v1_threshold_fp16", "v2_planner_fp16", "v2_planner_int8_kivi4", "v2_planner_all_codecs"]
-    labels = ["UAMM-1\n(threshold, fp16)", "planner\nfp16 only", "planner\nint8+kivi4", "planner\nall codecs"]
-    cols = [PAL["v1"], PAL["v2fp16"], PAL["v2i8"], PAL["v2all"]]
+    names = ["v1_threshold_fp16", "v1_capacity_aware_fp16", "static_kivi4_no_planner", "static_kivi2_no_planner",
+             "v2_planner_fp16", "v2_planner_int8_kivi4", "v2_planner_all_codecs"]
+    labels = ["UAMM-1", "UAMM-1 cap-aware", "static 4-bit", "static 2-bit", "planner FP16", "planner INT8+4b", "planner all codecs"]
+    cols = [PAL["v1"], "#e53e3e", "#b7791f", "#d69e2e", PAL["v2fp16"], PAL["v2i8"], PAL["v2all"]]
     panels = [("resident_vs_fp16", "resident bytes / FP16 bytes"), ("dropped_tokens", "tokens permanently dropped"),
               ("attn_rel_l2_mean", "attention-output rel. L2 error (mean)"),
               ("attn_mass_recall_mean", "attention-mass recall"),
               ("sim_fetch_ms_per_token", "modelled fetch ms / token"), ("overflow_total", "tier-budget overflow (bytes)")]
-    fig, axs = plt.subplots(2, 3, figsize=(11, 6))
+    fig, axs = plt.subplots(2, 3, figsize=(12.5, 8))
     for ax, (k, t) in zip(axs.ravel(), panels):
         m = [ms(e1[n], k)[0] for n in names]; s = [ms(e1[n], k)[1] for n in names]
-        ax.bar(range(4), m, yerr=s, color=cols, capsize=3)
-        ax.set_xticks(range(4)); ax.set_xticklabels(labels, fontsize=7)
-        ax.set_title(t, fontsize=9)
+        ax.bar(range(len(names)), m, yerr=s, color=cols, capsize=3)
+        ax.set_xticks(range(len(names))); ax.set_xticklabels(labels, fontsize=9.5, rotation=35, ha="right")
+        ax.set_title(t, fontsize=11.7)
         for i, v in enumerate(m):
-            ax.text(i, v, f"{v:.3g}", ha="center", va="bottom", fontsize=7)
-    fig.suptitle("Ablation at 1536 tokens (mean +/- std over 5 seeds)", fontsize=11, fontweight="bold")
+            ax.text(i, v, f"{v:.3g}", ha="center", va="bottom", fontsize=7.8)
+    fig.suptitle("Ablation and baselines at 1536 tokens (mean +/- std over 5 seeds)", fontsize=14.3, fontweight="bold")
     fig.tight_layout()
     save(fig, "f05_ablation.png")
 
@@ -171,9 +194,9 @@ def f_context_scaling():
         for key, lab, col in series:
             m = [ms(e2[key][c], k)[0] for c in ctxs]; s = [ms(e2[key][c], k)[1] for c in ctxs]
             ax.errorbar([int(c) for c in ctxs], m, yerr=s, marker="o", ms=3.5, label=lab, color=col, capsize=2)
-        ax.set_title(t, fontsize=9); ax.set_xlabel("context (tokens)")
-    axs[0, 0].legend(fontsize=7)
-    fig.suptitle("Context-length scaling with the tier budget fixed at 168 KB (3 seeds)", fontsize=11, fontweight="bold")
+        ax.set_title(t, fontsize=11.7); ax.set_xlabel("context (tokens)")
+    axs[0, 0].legend(fontsize=9.1)
+    fig.suptitle("Context-length scaling with the tier budget fixed at 168 KB (3 seeds)", fontsize=14.3, fontweight="bold")
     fig.tight_layout()
     save(fig, "f06_context_scaling.png")
 
@@ -188,12 +211,12 @@ def f_budget():
     ideal = [bms[:b].sum() for b in budgets]
     axs[0].plot(budgets, rec, "o-", color=PAL["v2all"], label="min/max bound selection (measured)")
     axs[0].plot(budgets, ideal, "s--", color="gray", label="oracle best-B blocks (avg of sampled steps, ctx 256-1536)")
-    axs[0].set_xlabel("blocks fetched per step (budget B)"); axs[0].set_ylabel("attention-mass recall"); axs[0].legend(fontsize=6.5)
-    axs[0].set_title("Selection quality vs budget", fontsize=9)
+    axs[0].set_xlabel("blocks fetched per step (budget B)"); axs[0].set_ylabel("attention-mass recall"); axs[0].legend(fontsize=8.5, loc="lower right")
+    axs[0].set_title("Selection quality vs budget", fontsize=11.7)
     axs[1].plot(budgets, [ms(e3[str(b)], "attn_rel_l2_mean")[0] for b in budgets], "o-", color=PAL["v1"])
-    axs[1].set_xlabel("budget B"); axs[1].set_ylabel("rel. L2 error"); axs[1].set_title("Output error vs budget", fontsize=9)
+    axs[1].set_xlabel("budget B"); axs[1].set_ylabel("rel. L2 error"); axs[1].set_title("Output error vs budget", fontsize=11.7)
     axs[2].plot(budgets, [ms(e3[str(b)], "sim_fetch_ms_per_token")[0] for b in budgets], "o-", color=PAL["t3"])
-    axs[2].set_xlabel("budget B"); axs[2].set_ylabel("modelled fetch ms/token"); axs[2].set_title("Fetch cost vs budget", fontsize=9)
+    axs[2].set_xlabel("budget B"); axs[2].set_ylabel("modelled fetch ms/token"); axs[2].set_title("Fetch cost vs budget", fontsize=11.7)
     fig.tight_layout()
     save(fig, "f07_budget_sweep.png")
 
@@ -207,17 +230,17 @@ def f_lambda():
                                 ("sim_fetch_ms_per_token", "fetch ms/token"), ("flash_block_reads", "flash block reads")]):
         m = [ms(e[l], k)[0] for l in ls]; s = [ms(e[l], k)[1] for l in ls]
         ax.errorbar(range(len(ls)), m, yerr=s, marker="o", ms=4, color=PAL["v2i8"], capsize=2)
-        ax.set_xticks(range(len(ls))); ax.set_xticklabels([f"{v:g}" for v in x], fontsize=7)
-        ax.set_xlabel("lambda_quality"); ax.set_title(t, fontsize=9)
-    fig.suptitle("Quality-penalty weight lambda: the quality / latency / memory trade-off", fontsize=10, fontweight="bold")
+        ax.set_xticks(range(len(ls))); ax.set_xticklabels([f"{v:g}" for v in x], fontsize=9.1)
+        ax.set_xlabel("lambda_quality"); ax.set_title(t, fontsize=11.7)
+    fig.suptitle("Quality-penalty weight lambda: the quality / latency / memory trade-off", fontsize=13.0, fontweight="bold")
     fig.tight_layout()
     save(fig, "f08_lambda_sweep.png")
     # pareto
     fig, ax = plt.subplots(figsize=(6, 4.2))
     err = [ms(e[l], "attn_rel_l2_mean")[0] for l in ls]; fet = [ms(e[l], "sim_fetch_ms_per_token")[0] for l in ls]
-    sc = ax.scatter(fet, err, c=range(len(ls)), cmap="viridis", s=60)
+    sc = ax.scatter(fet, err, c=range(len(ls)), cmap="Greys", s=60)
     for l, a, b in zip(ls, fet, err):
-        ax.annotate(f"lambda={float(l):g}", (a, b), fontsize=7, xytext=(4, 3), textcoords="offset points")
+        ax.annotate(f"lambda={float(l):g}", (a, b), fontsize=9.1, xytext=(4, 3), textcoords="offset points")
     ax.set_xlabel("modelled fetch ms/token"); ax.set_ylabel("rel. L2 error"); ax.set_title("Error vs fetch-latency Pareto view (lambda sweep)")
     save(fig, "f09_lambda_pareto.png")
 
@@ -229,18 +252,18 @@ def f_stability():
     ax.bar(range(len(ks)), [ms(e[k], "migrations")[0] for k in ks], color=PAL["t2"], label="tier migrations")
     ax.bar(range(len(ks)), [ms(e[k], "reencodes")[0] for k in ks], bottom=[ms(e[k], "migrations")[0] for k in ks],
            color=PAL["t3"], label="re-encodes")
-    ax.set_xticks(range(len(ks))); ax.set_xticklabels(ks); ax.set_xlabel("hysteresis margin"); ax.set_title("Churn vs hysteresis margin", fontsize=9); ax.legend(fontsize=7)
+    ax.set_xticks(range(len(ks))); ax.set_xticklabels(ks); ax.set_xlabel("hysteresis margin"); ax.set_title("Churn vs hysteresis margin", fontsize=11.7); ax.legend(fontsize=9.1)
     e = load("e4_residency"); ks = list(e)
     axs[1].plot(range(len(ks)), [ms(e[k], "migrations")[0] for k in ks], "o-", color=PAL["t2"], label="migrations")
     axs[1].set_ylabel("migrations")
     a2 = axs[1].twinx(); a2.plot(range(len(ks)), [ms(e[k], "sim_fetch_ms_per_token")[0] for k in ks], "s--", color=PAL["t3"], label="fetch ms")
     a2.set_ylabel("fetch ms/token"); a2.grid(False)
-    axs[1].set_xticks(range(len(ks))); axs[1].set_xticklabels(ks); axs[1].set_xlabel("min residency (steps)"); axs[1].set_title("Residency: churn vs latency", fontsize=9)
+    axs[1].set_xticks(range(len(ks))); axs[1].set_xticklabels(ks); axs[1].set_xlabel("min residency (steps)"); axs[1].set_title("Residency: churn vs latency", fontsize=11.7)
     e = load("e4_interval"); ks = list(e)
     axs[2].plot(range(len(ks)), [ms(e[k], "flash_block_reads")[0] for k in ks], "o-", color=PAL["t3"], label="flash reads")
     axs[2].set_ylabel("flash block reads")
     a3 = axs[2].twinx(); a3.plot(range(len(ks)), [ms(e[k], "migrations")[0] for k in ks], "s--", color=PAL["t2"]); a3.set_ylabel("migrations"); a3.grid(False)
-    axs[2].set_xticks(range(len(ks))); axs[2].set_xticklabels(ks); axs[2].set_xlabel("plan interval (steps)"); axs[2].set_title("Replan frequency", fontsize=9)
+    axs[2].set_xticks(range(len(ks))); axs[2].set_xticklabels(ks); axs[2].set_xlabel("plan interval (steps)"); axs[2].set_title("Replan frequency", fontsize=11.7)
     fig.tight_layout()
     save(fig, "f10_stability_knobs.png")
 
@@ -251,15 +274,15 @@ def f_h2o_knobs():
     axs[0].errorbar(range(len(ks)), [ms(e[k], "attn_rel_l2_mean")[0] for k in ks], yerr=[ms(e[k], "attn_rel_l2_mean")[1] for k in ks], marker="o", color=PAL["v2all"], capsize=2)
     axs[0].set_ylabel("rel. L2 error")
     a = axs[0].twinx(); a.plot(range(len(ks)), [ms(e[k], "resident_vs_fp16")[0] for k in ks], "s--", color=PAL["t3"]); a.set_ylabel("resident / FP16"); a.grid(False)
-    axs[0].set_xticks(range(len(ks))); axs[0].set_xticklabels(ks); axs[0].set_xlabel("H2O decay"); axs[0].set_title("Importance memory length", fontsize=9)
+    axs[0].set_xticks(range(len(ks))); axs[0].set_xticklabels(ks); axs[0].set_xlabel("H2O decay"); axs[0].set_title("Importance memory length", fontsize=11.7)
     e = load("e4_aggregation"); ks = list(e)
     axs[1].bar(range(len(ks)), [ms(e[k], "attn_rel_l2_mean")[0] for k in ks], color=PAL["v2i8"])
-    axs[1].set_xticks(range(len(ks))); axs[1].set_xticklabels(ks); axs[1].set_ylabel("rel. L2 error"); axs[1].set_title("Token -> block aggregation", fontsize=9)
+    axs[1].set_xticks(range(len(ks))); axs[1].set_xticklabels(ks); axs[1].set_ylabel("rel. L2 error"); axs[1].set_title("Token -> block aggregation", fontsize=11.7)
     e = load("e4_blocksize"); ks = list(e)
     axs[2].plot(range(len(ks)), [ms(e[k], "attn_rel_l2_mean")[0] for k in ks], "o-", color=PAL["v1"], label="error")
     axs[2].set_ylabel("rel. L2 error")
     a = axs[2].twinx(); a.plot(range(len(ks)), [ms(e[k], "migrations")[0] for k in ks], "s--", color=PAL["t2"]); a.set_ylabel("migrations"); a.grid(False)
-    axs[2].set_xticks(range(len(ks))); axs[2].set_xticklabels(ks); axs[2].set_xlabel("block size (tokens)"); axs[2].set_title("Block granularity", fontsize=9)
+    axs[2].set_xticks(range(len(ks))); axs[2].set_xticklabels(ks); axs[2].set_xlabel("block size (tokens)"); axs[2].set_title("Block granularity", fontsize=11.7)
     fig.tight_layout()
     save(fig, "f11_h2o_blocksize_knobs.png")
 
@@ -268,16 +291,67 @@ def f_capacity():
     e = load("e5_capacity")
     fs = ["0.5", "0.75", "1.0", "1.5", "2.0", "3.0"]
     fig, axs = plt.subplots(1, 3, figsize=(12, 3.8))
-    for pol, lab, col in (("v1", "UAMM-1", PAL["v1"]), ("v2", "UAMM-2 planner (all codecs)", PAL["v2all"])):
+    for pol, lab, col in (("v1", "UAMM-1", PAL["v1"]), ("v1_capacity_aware", "UAMM-1 capacity-aware", "#e53e3e"),
+                          ("static_kivi4", "static 4-bit (no planner)", "#b7791f"),
+                          ("v2_fp16_only", "planner, fp16 only", PAL["v2fp16"]),
+                          ("v2", "UAMM-2 planner (all codecs)", PAL["v2all"])):
         for ax, (k, t) in zip(axs, [("attn_rel_l2_mean", "rel. L2 error"), ("dropped_tokens", "tokens dropped"),
                                     ("sim_fetch_ms_per_token", "modelled fetch ms/token")]):
             ax.errorbar([float(f) for f in fs], [ms(e[pol][f], k)[0] for f in fs], yerr=[ms(e[pol][f], k)[1] for f in fs],
                         marker="o", ms=4, color=col, label=lab, capsize=2)
-            ax.set_xlabel("tier budget factor (1.0 = 168 KB)"); ax.set_title(t, fontsize=9)
-    axs[0].legend(fontsize=7)
-    fig.suptitle("Memory-budget sweep at 1536 tokens (3 seeds)", fontsize=10, fontweight="bold")
+            ax.set_xlabel("tier budget factor (1.0 = 168 KB)"); ax.set_title(t, fontsize=11.7)
+    axs[0].legend(fontsize=7.8)
+    axs[2].set_yscale("log")
+    fig.suptitle("Memory-budget sweep at 1536 tokens (3 seeds)", fontsize=13.0, fontweight="bold")
     fig.tight_layout()
     save(fig, "f12_capacity_sweep.png")
+
+
+def f_static_vs_planner():
+    e = load("e10_static_vs_planner")
+    fig, axs = plt.subplots(1, 2, figsize=(10.5, 4.0))
+    for key, lab, col, mk in (("planner_all_codecs", "planner, all codecs", PAL["v2all"], "o"),
+                              ("planner_int8_kivi4", "planner, fp16+int8+4-bit", PAL["v2i8"], "s")):
+        pts = [(ms(e[key][l], "resident_vs_fp16")[0], ms(e[key][l], "attn_rel_l2_mean")[0],
+                ms(e[key][l], "sim_fetch_ms_per_token")[0], l) for l in e[key]]
+        for ax, xi in zip(axs, (0, 2)):
+            ax.plot([p[xi] for p in pts], [p[1] for p in pts], marker=mk, color=col, label=lab + " (lambda sweep)")
+            if xi == 0:
+                for p in pts:
+                    ax.annotate(p[3], (p[0], p[1]), fontsize=7.8, xytext=(3, 3), textcoords="offset points")
+    for key, lab, col, mk in (("static_kivi4_no_planner", "static 4-bit", "#b7791f", "D"),
+                              ("static_kivi2_no_planner", "static 2-bit", "#d69e2e", "^"),
+                              ("static_int8_no_planner", "static int8 (overflows)", "#718096", "v")):
+        l = list(e[key])[0]
+        x0, y, x2 = (ms(e[key][l], "resident_vs_fp16")[0], ms(e[key][l], "attn_rel_l2_mean")[0],
+                     ms(e[key][l], "sim_fetch_ms_per_token")[0])
+        axs[0].plot([x0], [y], mk, color=col, ms=7, label=lab); axs[1].plot([x2], [y], mk, color=col, ms=7, label=lab)
+    axs[0].set_xlabel("resident bytes / FP16 bytes"); axs[1].set_xlabel("modelled fetch ms / token")
+    for ax in axs:
+        ax.set_ylabel("attention-output rel. L2 error")
+    axs[0].legend(fontsize=7.8)
+    fig.suptitle("No-planner baselines against the planner (1536 tokens, 3 seeds, synthetic workload)", fontsize=13.0, fontweight="bold")
+    fig.tight_layout()
+    save(fig, "f22_static_vs_planner.png")
+
+
+def f_summary_budget():
+    e = load("e9_summary_charged")["variants"]
+    e1 = load("e1_ablation")
+    names = ["v1_threshold_fp16", "static_kivi4_no_planner", "v2_planner_int8_kivi4", "v2_planner_all_codecs"]
+    labels = ["UAMM-1", "static\n4-bit", "planner\nint8+4b", "planner\nall codecs"]
+    fig, axs = plt.subplots(1, 3, figsize=(11, 3.6))
+    w = 0.38
+    x = np.arange(len(names))
+    for ax, k, t in zip(axs, ("overflow_total", "dropped_tokens", "resident_with_summaries_vs_fp16"),
+                        ("budget overflow (bytes)", "tokens dropped", "resident incl. key summaries / FP16")):
+        ax.bar(x - w / 2, [ms(e1[n], k)[0] for n in names], w, color="#718096", label="summaries not charged (as in E1)")
+        ax.bar(x + w / 2, [ms(e[n], k)[0] for n in names], w, color="#2f855a", label="summaries charged (E9)")
+        ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=9.1); ax.set_title(t, fontsize=11.7)
+    axs[0].legend(fontsize=7.8)
+    fig.suptitle("Charging the key min/max summaries to the 168 KB budget (1536 tokens, 5 seeds)", fontsize=13.0, fontweight="bold")
+    fig.tight_layout()
+    save(fig, "f23_summary_budget.png")
 
 
 def f_codecsets():
@@ -289,9 +363,9 @@ def f_codecsets():
         m = [ms(e[kk], k)[0] for kk in keys]
         cols = [PAL["v2i8"] if "True" in kk else PAL["v2fp16"] for kk in keys]
         ax.barh(range(len(keys)), m, color=cols)
-        ax.set_yticks(range(len(keys))); ax.set_yticklabels([kk.replace("|entropy=", "  z=") for kk in keys], fontsize=7)
-        ax.set_title(t, fontsize=9)
-    fig.suptitle("Which codecs are enabled (blue: zlib on flash; gray: off)", fontsize=10, fontweight="bold")
+        ax.set_yticks(range(len(keys))); ax.set_yticklabels([kk.replace("|entropy=", "  z=") for kk in keys], fontsize=9.1)
+        ax.set_title(t, fontsize=11.7)
+    fig.suptitle("Which codecs are enabled (dark bar: zlib on flash, light bar: off)", fontsize=13.0, fontweight="bold")
     fig.tight_layout()
     save(fig, "f13_codec_sets.png")
 
@@ -306,22 +380,22 @@ def f_timeseries():
     ax = axs[0, 0]
     ax.stackplot(t, tb.T, labels=["T0 SRAM", "T1 DRAM hot", "T2 DRAM warm", "T3 flash"], colors=[PAL["t0"], PAL["t1"], PAL["t2"], PAL["t3"]])
     ax.plot(t, np.array([min((r["t"] + 1) * 64 * 2 * 2, 1e9) for r in pts]) / 1024, "k--", lw=1, label="FP16 KV size")
-    ax.set_title("UAMM-2: bytes resident per tier over time (KiB)", fontsize=9); ax.set_xlabel("decode step"); ax.legend(fontsize=7, loc="upper left")
+    ax.set_title("UAMM-2: bytes resident per tier over time (KiB)", fontsize=11.7); ax.set_xlabel("decode step"); ax.legend(fontsize=9.1, loc="upper left")
     ax = axs[0, 1]
     names = sorted({c for r in pts for c in r["codecs"]})
     cnt = np.array([[r["codecs"].get(c, 0) for c in names] for r in pts])
     ax.stackplot(t, cnt.T, labels=names)
-    ax.set_title("UAMM-2: blocks per codec over time", fontsize=9); ax.set_xlabel("decode step"); ax.legend(fontsize=7, loc="upper left")
+    ax.set_title("UAMM-2: blocks per codec over time", fontsize=11.7); ax.set_xlabel("decode step"); ax.legend(fontsize=9.1, loc="upper left")
     ax = axs[1, 0]
     def roll(x, w=64):
         x = np.array(x, float); c = np.cumsum(np.insert(x, 0, 0)); return (c[w:] - c[:-w]) / w
     for lab, tr_, col in (("UAMM-1", v1, PAL["v1"]), ("UAMM-2 all codecs", v2, PAL["v2all"])):
         ax.plot(roll([r["fetch_ms"] for r in tr_]), color=col, label=lab)
-    ax.set_title("Modelled fetch ms/token (64-step rolling mean)", fontsize=9); ax.set_xlabel("decode step"); ax.legend(fontsize=7)
+    ax.set_title("Modelled fetch ms/token (64-step rolling mean)", fontsize=11.7); ax.set_xlabel("decode step"); ax.legend(fontsize=9.1)
     ax = axs[1, 1]
     for lab, tr_, col in (("UAMM-1", v1, PAL["v1"]), ("UAMM-2 all codecs", v2, PAL["v2all"])):
         ax.plot(roll([r["recall"] for r in tr_]), color=col, label=lab)
-    ax.set_title("Attention-mass recall (64-step rolling mean)", fontsize=9); ax.set_xlabel("decode step"); ax.legend(fontsize=7)
+    ax.set_title("Attention-mass recall (64-step rolling mean)", fontsize=11.7); ax.set_xlabel("decode step"); ax.legend(fontsize=9.1)
     fig.tight_layout()
     save(fig, "f14_timeseries_v2.png")
 
@@ -329,14 +403,14 @@ def f_timeseries():
     p1 = [r for r in v1 if "dropped_tokens" in r]
     axs[0].plot([r["t"] for r in p1], [r["dropped_tokens"] for r in p1], color=PAL["v1"], label="UAMM-1")
     axs[0].plot([r["t"] for r in pts], [r["dropped_tokens"] for r in pts], color=PAL["v2all"], label="UAMM-2")
-    axs[0].set_title("Cumulative tokens dropped", fontsize=9); axs[0].set_xlabel("decode step"); axs[0].legend(fontsize=7)
+    axs[0].set_title("Cumulative tokens dropped", fontsize=11.7); axs[0].set_xlabel("decode step"); axs[0].legend(fontsize=9.1)
     axs[1].plot([r["t"] for r in p1], [r["migrations"] for r in p1], color=PAL["v1"], label="UAMM-1 migrations")
     axs[1].plot([r["t"] for r in pts], [r["migrations"] for r in pts], color=PAL["v2all"], label="UAMM-2 migrations")
     axs[1].plot([r["t"] for r in pts], [r["reencodes"] for r in pts], color=PAL["t3"], ls="--", label="UAMM-2 re-encodes")
-    axs[1].set_title("Cumulative migrations / re-encodes", fontsize=9); axs[1].set_xlabel("decode step"); axs[1].legend(fontsize=7)
+    axs[1].set_title("Cumulative migrations / re-encodes", fontsize=11.7); axs[1].set_xlabel("decode step"); axs[1].legend(fontsize=9.1)
     axs[2].plot(roll([r["flash_reads"] for r in v1]), color=PAL["v1"], label="UAMM-1")
     axs[2].plot(roll([r["flash_reads"] for r in v2]), color=PAL["v2all"], label="UAMM-2")
-    axs[2].set_title("Flash block reads per step (rolling mean)", fontsize=9); axs[2].set_xlabel("decode step"); axs[2].legend(fontsize=7)
+    axs[2].set_title("Flash block reads per step (rolling mean)", fontsize=11.7); axs[2].set_xlabel("decode step"); axs[2].legend(fontsize=9.1)
     fig.tight_layout()
     save(fig, "f15_timeseries_churn.png")
 
@@ -344,7 +418,7 @@ def f_timeseries():
     for lab, tr_, col in (("UAMM-1", v1, PAL["v1"]), ("UAMM-2 all codecs", v2, PAL["v2all"])):
         x = np.array([r["rel_l2"] for r in tr_[64:]])
         ax.hist(np.clip(x, 0, 3), bins=60, alpha=0.55, color=col, label=f"{lab} (median {np.median(x):.2f})")
-    ax.set_xlabel("per-step relative L2 error (clipped at 3)"); ax.set_ylabel("steps"); ax.legend(fontsize=7)
+    ax.set_xlabel("per-step relative L2 error (clipped at 3)"); ax.set_ylabel("steps"); ax.legend(fontsize=9.1)
     ax.set_title("Distribution of per-step attention-output error")
     save(fig, "f16_error_distribution.png")
 
@@ -355,11 +429,11 @@ def f_attention_structure():
     c = np.array(e8["cum_token"])
     axs[0].plot(np.arange(1, len(c) + 1), c, color=PAL["v2i8"])
     axs[0].set_xscale("log"); axs[0].set_xlabel("top-k tokens by attention weight"); axs[0].set_ylabel("cumulative attention mass")
-    axs[0].set_title("Token-level concentration", fontsize=9)
+    axs[0].set_title("Token-level concentration", fontsize=11.7)
     b = np.array(e8["block_mass_sorted"])
     axs[1].bar(range(1, len(b) + 1), b, color=PAL["v2all"]); axs[1].set_xlabel("block rank"); axs[1].set_ylabel("mean attention mass")
-    axs[1].set_title("Block-level mass (sorted, 16-token blocks)", fontsize=9)
-    axs[2].hist(e8["entropy"], bins=15, color=PAL["t3"]); axs[2].set_xlabel("softmax entropy (nats)"); axs[2].set_title("Attention entropy per sampled step", fontsize=9)
+    axs[1].set_title("Block-level mass (sorted, 16-token blocks)", fontsize=11.7)
+    axs[2].hist(e8["entropy"], bins=15, color=PAL["t3"]); axs[2].set_xlabel("softmax entropy (nats)"); axs[2].set_title("Attention entropy per sampled step", fontsize=11.7)
     fig.tight_layout()
     save(fig, "f17_attention_structure.png")
 
@@ -373,14 +447,14 @@ def f_codec_micro():
         r = {x["codec"]: x for x in rows if x["outliers"] == outl}
         axs[0].bar(np.arange(7) + off, [r[n]["ratio_vs_fp16"] for n in names], 0.4, color=col, label=f"outlier channels: {outl}")
         axs[1].bar(np.arange(7) + off, [max(r[n]["err_mean"], 1e-8) for n in names], 0.4, color=col, label=f"outliers: {outl}")
-    axs[0].set_xticks(range(7)); axs[0].set_xticklabels(names, fontsize=8); axs[0].set_title("bytes / FP16 bytes (16x64 block)", fontsize=9); axs[0].legend(fontsize=7)
-    axs[1].set_xticks(range(7)); axs[1].set_xticklabels(names, fontsize=8); axs[1].set_yscale("log"); axs[1].set_title("relative squared error (log)", fontsize=9)
+    axs[0].set_xticks(range(7)); axs[0].set_xticklabels(names, fontsize=10.4); axs[0].set_title("bytes / FP16 bytes (16x64 block)", fontsize=11.7); axs[0].legend(fontsize=9.1)
+    axs[1].set_xticks(range(7)); axs[1].set_xticklabels(names, fontsize=10.4); axs[1].set_yscale("log"); axs[1].set_title("relative squared error (log)", fontsize=11.7)
     pc = e7["key_axis"]
     lab = [f"{p['bits']}b {'outl' if p['outliers'] else 'plain'}" for p in pc]
     axs[2].bar(np.arange(len(pc)) - 0.2, [p["per_channel"] for p in pc], 0.4, color=PAL["v2all"], label="per-channel (KIVI keys)")
     axs[2].bar(np.arange(len(pc)) + 0.2, [p["per_token"] for p in pc], 0.4, color=PAL["v1"], label="per-token")
-    axs[2].set_xticks(range(len(pc))); axs[2].set_xticklabels(lab, fontsize=7); axs[2].set_yscale("log")
-    axs[2].set_title("Key quantization axis: relative error (log)", fontsize=9); axs[2].legend(fontsize=7)
+    axs[2].set_xticks(range(len(pc))); axs[2].set_xticklabels(lab, fontsize=9.1); axs[2].set_yscale("log")
+    axs[2].set_title("Key quantization axis: relative error (log)", fontsize=11.7); axs[2].legend(fontsize=9.1)
     fig.tight_layout()
     save(fig, "f18_codec_micro.png")
 
@@ -392,16 +466,16 @@ def f_final_placement():
     sim.run(1536)
     bl = sim.cache.blocks
     codecs = sorted({b.codec for b in bl})
-    cmap = {c: plt.cm.tab10(i) for i, c in enumerate(codecs)}
+    cmap = {c: plt.cm.Greys(0.2 + 0.7 * i / max(1, len(codecs) - 1)) for i, c in enumerate(codecs)}
     fig, axs = plt.subplots(1, 3, figsize=(13, 3.9), gridspec_kw={"width_ratios": [2.2, 1, 1]})
     for b in bl:
         axs[0].bar(b.block_id, 1, bottom=b.tier, color=cmap[b.codec], width=0.9)
     axs[0].set_yticks([0.5, 1.5, 2.5, 3.5]); axs[0].set_yticklabels(["T0", "T1", "T2", "T3"]); axs[0].set_xlabel("block id (oldest -> newest)")
     from matplotlib.patches import Patch
-    axs[0].legend(handles=[Patch(color=cmap[c], label=c) for c in codecs], fontsize=7, ncol=3, loc="upper center")
-    axs[0].set_title("Final placement map: tier (row) and codec (colour) per block", fontsize=9); axs[0].set_ylim(0, 4.9)
-    axs[1].bar([b.block_id for b in bl], [b.importance for b in bl], color=PAL["v2all"]); axs[1].set_title("H2O block importance (norm.)", fontsize=9); axs[1].set_xlabel("block id")
-    axs[2].bar([b.block_id for b in bl], [b.hit_ema for b in bl], color=PAL["t3"]); axs[2].set_title("selection frequency (hit_ema)", fontsize=9); axs[2].set_xlabel("block id")
+    axs[0].legend(handles=[Patch(color=cmap[c], label=c) for c in codecs], fontsize=9.1, ncol=3, loc="upper center")
+    axs[0].set_title("Final placement map: tier (row) and codec (colour) per block", fontsize=11.7); axs[0].set_ylim(0, 4.9)
+    axs[1].bar([b.block_id for b in bl], [b.importance for b in bl], color=PAL["v2all"]); axs[1].set_title("H2O block importance (norm.)", fontsize=11.7); axs[1].set_xlabel("block id")
+    axs[2].bar([b.block_id for b in bl], [b.hit_ema for b in bl], color=PAL["t3"]); axs[2].set_title("selection frequency (hit_ema)", fontsize=11.7); axs[2].set_xlabel("block id")
     fig.tight_layout()
     save(fig, "f19_final_placement.png")
     # heatmap tier x codec
@@ -409,10 +483,10 @@ def f_final_placement():
     cnt = collections.Counter((b.tier, b.codec) for b in bl)
     fig, ax = plt.subplots(figsize=(5.6, 3.4))
     M = np.array([[cnt.get((t, c), 0) for c in codecs] for t in range(4)])
-    ax.imshow(M, cmap="Blues"); ax.set_xticks(range(len(codecs))); ax.set_xticklabels(codecs); ax.set_yticks(range(4)); ax.set_yticklabels(["T0", "T1", "T2", "T3"])
+    ax.imshow(M, cmap="Greys"); ax.set_xticks(range(len(codecs))); ax.set_xticklabels(codecs); ax.set_yticks(range(4)); ax.set_yticklabels(["T0", "T1", "T2", "T3"])
     for i in range(4):
         for j in range(len(codecs)):
-            ax.text(j, i, M[i, j], ha="center", va="center", fontsize=9)
+            ax.text(j, i, M[i, j], ha="center", va="center", fontsize=11.7)
     ax.grid(False); ax.set_title("Blocks per (tier, codec) at step 1536")
     save(fig, "f20_tier_codec_heatmap.png")
     return {"codecs": codecs, "matrix": M.tolist()}
@@ -437,15 +511,15 @@ def f_yosys():
     fig, axs = plt.subplots(1, 2, figsize=(11.5, 4))
     tot = [data[n]["cells"] for n in names]
     axs[0].bar(range(4), tot, color=[PAL["t3"], PAL["v2i8"], PAL["v2all"], PAL["t2"]])
-    axs[0].set_xticks(range(4)); axs[0].set_xticklabels([n.replace("uamm_", "") for n in names], fontsize=8)
-    axs[0].set_title("Yosys generic-cell count after synth -flatten", fontsize=9)
+    axs[0].set_xticks(range(4)); axs[0].set_xticklabels([n.replace("uamm_", "") for n in names], fontsize=10.4)
+    axs[0].set_title("Yosys generic-cell count after synth -flatten", fontsize=11.7)
     for i, v in enumerate(tot):
-        axs[0].text(i, v, str(v), ha="center", va="bottom", fontsize=8)
+        axs[0].text(i, v, str(v), ha="center", va="bottom", fontsize=10.4)
     ff = [sum(v for k, v in data[n].items() if k.startswith("$_DFF") or k.startswith("$_SDFF")) for n in names]
     comb = [data[n]["cells"] - f for n, f in zip(names, ff)]
     axs[1].bar(range(4), ff, label="flip-flops", color=PAL["t1"]); axs[1].bar(range(4), comb, bottom=ff, label="combinational", color=PAL["t3"])
-    axs[1].set_xticks(range(4)); axs[1].set_xticklabels([n.replace("uamm_", "") for n in names], fontsize=8); axs[1].legend(fontsize=8)
-    axs[1].set_title("Flip-flop vs combinational split", fontsize=9)
+    axs[1].set_xticks(range(4)); axs[1].set_xticklabels([n.replace("uamm_", "") for n in names], fontsize=10.4); axs[1].legend(fontsize=10.4)
+    axs[1].set_title("Flip-flop vs combinational split", fontsize=11.7)
     fig.tight_layout()
     save(fig, "f21_yosys_cells.png")
     return data
@@ -604,7 +678,7 @@ def term(text, name, title, maxlines=60, fs=7.2):
 
 def f_terminal():
     cap = ROOT / "docs" / "captures"
-    term((cap / "pytest_verbose.txt").read_text(), "t01_pytest.png", "python -m pytest -v tests", maxlines=78, fs=6.4)
+    term((cap / "pytest_verbose.txt").read_text(), "t01_pytest.png", "python -m pytest -v tests", maxlines=90, fs=6.4)
     term((cap / "rtl_regression.txt").read_text(), "t02_rtl_regression.png", "make -C hw test", maxlines=14, fs=6.6)
     term((cap / "rtl_lint.txt").read_text(), "t03_rtl_lint.png", "make -C hw lint   (verilator --lint-only -Wall)", maxlines=24, fs=6.6)
     term((cap / "mutation.txt").read_text(), "t04_mutation.png", "RTL mutation testing (injected bugs must make a testbench FAIL)", maxlines=24, fs=7.2)
@@ -616,7 +690,7 @@ def f_terminal():
 if __name__ == "__main__":
     which = sys.argv[1:] or ["all"]
     f_kv_growth(); f_kv_bandwidth(); f_kv_compression_effect(); f_coverage_matrix()
-    f_ablation(); f_context_scaling(); f_budget(); f_lambda(); f_stability(); f_h2o_knobs(); f_capacity(); f_codecsets()
+    f_ablation(); f_context_scaling(); f_budget(); f_lambda(); f_stability(); f_h2o_knobs(); f_capacity(); f_static_vs_planner(); f_summary_budget(); f_codecsets()
     f_timeseries(); f_attention_structure(); f_codec_micro()
     info = f_final_placement()
     json.dump(info, open(ROOT / "experiments" / "results" / "final_placement.json", "w"))

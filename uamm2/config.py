@@ -42,7 +42,9 @@ class Config:
     h2o_aggregation: str = "mean"   # mean | max | sum
 
     # ---- planner --------------------------------------------------------
-    policy: str = "utility"         # "utility" (UAMM-2) | "threshold" (original UAMM-1)
+    policy: str = "utility"         # "utility" (UAMM-2) | "threshold" (original UAMM-1) | "static" (baseline)
+    static_codec: str = "kivi4"     # codec used by the "static" baseline (every block, no planner)
+    threshold_fill_fast: bool = False   # UAMM-1 variant: ignore the tier thresholds, fill the fastest tier with room
     plan_interval: int = 8          # replan every N decode steps
     hysteresis_margin: float = 0.25
     min_residency_steps: int = 16
@@ -75,8 +77,8 @@ class Config:
             raise ValueError("head_dim must be divisible by v_group")
         if self.h2o_aggregation not in ("mean", "max", "sum"):
             raise ValueError("h2o_aggregation must be mean|max|sum")
-        if self.policy not in ("utility", "threshold"):
-            raise ValueError("policy must be utility|threshold")
+        if self.policy not in ("utility", "threshold", "static"):
+            raise ValueError("policy must be utility|threshold|static")
         if not 0.0 <= self.h2o_decay <= 1.0:
             raise ValueError("h2o_decay must be in [0,1]")
         if self.block_size <= 0:

@@ -1,0 +1,25 @@
+\begin{tikzpicture}[line cap=round,line join=round]
+\draw[rounded corners=4.4pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,230;green,230;blue,230}] (0.064in,1.983in) rectangle (1.300in,3.099in);
+\draw[rounded corners=4.4pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,236;green,236;blue,236}] (1.598in,1.983in) rectangle (2.835in,3.099in);
+\draw[rounded corners=4.4pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,240;green,240;blue,240}] (3.133in,1.983in) rectangle (4.369in,3.099in);
+\draw[rounded corners=4.4pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,221;green,221;blue,221}] (4.667in,1.983in) rectangle (6.586in,3.099in);
+\draw[rounded corners=4.4pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,246;green,246;blue,246}] (6.884in,1.983in) rectangle (8.376in,3.099in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (1.304in,2.541in) -- (1.594in,2.541in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (2.839in,2.541in) -- (3.129in,2.541in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (4.373in,2.541in) -- (4.663in,2.541in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (6.590in,2.541in) -- (6.880in,2.541in);
+\draw[rounded corners=4.4pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,255;green,255;blue,255}] (0.064in,0.443in) rectangle (2.664in,1.405in);
+\draw[rounded corners=4.4pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,255;green,255;blue,255}] (3.218in,0.443in) rectangle (5.818in,1.405in);
+\draw[rounded corners=4.4pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,255;green,255;blue,255}] (6.117in,0.443in) rectangle (8.376in,1.405in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (1.364in,1.386in) -- (0.682in,1.964in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (4.518in,1.386in) -- (2.217in,1.964in);
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont\bfseries,inner sep=0pt] at (0.682in,2.541in) {Metadata SRAM \\ 64 x 25 bit \\ \{prot,freq,rec,imp\}};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont\bfseries,inner sep=0pt] at (2.217in,2.541in) {issue counter \\ rd\_cnt (AW+1) \\ sync read};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont\bfseries,inner sep=0pt] at (3.751in,2.541in) {stage 0 regs \\ s0\_v, s0\_idx, \\ s0\_data};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.0pt}{9.4pt}\selectfont\bfseries,inner sep=0pt] at (5.627in,2.541in) {score = (imp*154 + rec*64 + \\ freq*38) >> 8 \\ tier thresholds 174 / 89 \\ evict: p>=243 \& score<89 \\ \& !protected};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont\bfseries,inner sep=0pt] at (7.630in,2.541in) {stage 1 regs \\ out\_valid, idx, \\ score, tier, evict};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont,inner sep=0pt] at (1.364in,0.924in) {write port (we, waddr, wdata) \\ firmware loads block metadata};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont,inner sep=0pt] at (4.518in,0.924in) {control FSM: start (ignored while busy), \\ pressure latched, busy/done};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont,inner sep=0pt] at (7.246in,0.924in) {1 block / cycle \\ sweep latency = NBLK + 3 cycles};
+\node[anchor=south,align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{12.0pt}{14.2pt}\selectfont\bfseries,inner sep=0pt] at (4.263in,3.648in) {uamm\_sweep\_scorer: 2-stage pipeline};
+\end{tikzpicture}

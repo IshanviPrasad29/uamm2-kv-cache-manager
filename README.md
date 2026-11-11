@@ -1,7 +1,7 @@
 # Unified Adaptive Memory Manager (UAMM) for KV-Cache Management on Edge Processors
 
 Term paper project, ELL305. Authors: Ishanvi Prasad (2024EE10406) and Sweety (2024MT10535).
-The full write-up is in [`report/UAMM2_Report.pdf`](report/UAMM2_Report.pdf).
+The full write-up is in [`report/UAMM2_Report.pdf`](report/UAMM2_Report.pdf): problem description, our approach (UAMM-1, its gaps, UAMM-2, comparison, problems faced), literature review, implementation, results, remaining problems, timeline, and Git setup.
 
 This repository contains two generations of one idea: **UAMM-1**, our first prototype, and **UAMM-2**, the redesign
 that fixes what UAMM-1 could not do.
@@ -33,7 +33,7 @@ UAMM-1 put three ideas into one memory manager:
 UAMM-1 worked as a demonstration but had real limits. Placement was by fixed thresholds with no notion of a memory
 budget, and every block stayed in FP16, so when memory ran out the only option was to delete blocks. Data could be
 dropped silently, the importance value saturated at 1.0, migrations were free in the cost model, and the Verilog
-used a divider and ignored its `protected` input. Chapters 3 and 4 of the report analyse these defects.
+used a divider and ignored its `protected` input. Chapters 4 and 5 of the report analyse these defects.
 
 ## 3. UAMM-2: the redesign
 
@@ -68,9 +68,9 @@ uamm1_original/   the original UAMM-1 Python and Verilog code, as listings
 hw/rtl/           uamm_sweep_scorer.v, uamm_kv_codec.v (quant4 / dequant4), uamm_block_table.v
 hw/tb/            self-checking testbenches;  hw/Makefile
 ara/              kv_kernels.{h,c}: fused query-key product on packed 4-bit keys, scalar and RISC-V vector versions
-experiments/      experiment scripts (E1 to E8), mutation test, figure scripts, raw results in experiments/results/
+experiments/      experiment scripts (E1 to E10), mutation test, figure scripts (make_figures.py, make_report_figs.py), raw results in experiments/results/
 docs/             waveform dumps (wave/), GTKWave views (gtkwave/), synthesis reports (synth/), figures, captures
-tests/            pytest suite (56 tests)
+tests/            pytest suite (59 tests)
 report/           the final report (PDF)
 ```
 
@@ -80,7 +80,7 @@ report/           the final report (PDF)
 pip install numpy pytest                 # also: pip install verilator (needs g++ with C++20) for the Verilog tests
 python3 -m uamm2 simulate --tokens 1024
 python3 -m uamm2 ablate --tokens 1536
-python3 -m pytest -q tests               # 56 tests
+python3 -m pytest -q tests               # 59 tests
 make -C hw test VERILATOR=verilator      # Verilog regression;  make -C hw lint
 python3 experiments/run_experiments.py   # all studies, results in experiments/results/*.json
 bash docs/gtkwave/view_waves.sh 3        # open a waveform in GTKWave with signals preloaded (1 to 6)
@@ -139,7 +139,7 @@ are never fetched or decoded. The H2O scores come from the attention weights tha
 
 ## 7. What is verified, and how
 
-* **Python:** 56 pytest tests, including property checks (the selection bound is a true upper bound, pack and unpack
+* **Python:** 59 pytest tests, including property checks (the selection bound is a true upper bound, pack and unpack
   round-trip, entropy variants are lossless, per-channel keys beat per-token keys on outlier channels, the precision
   ratchet, hysteresis reduces churn, capacities are respected).
 * **Verilog** (Verilator, bit-exact against `hwmodel.py`): sweep scorer 1088 checks, codec 400 vectors, block table
@@ -163,22 +163,21 @@ are never fetched or decoded. The H2O scores come from the attention weights tha
 * The planner is a greedy heuristic, not an optimal knapsack. `lambda_quality` was tuned on synthetic seeds 7 to 9; the
   results below are on held-out seeds 11 to 13.
 * **Not implemented:** prefetch, multi-sequence, multi-layer and multi-head layout (one flattened key and value vector per
-  token), copy-on-write prefix sharing, real flash I/O, and the proposed solutions in Chapter 12 of the report (those are
+  token), copy-on-write prefix sharing, real flash I/O, and the future scope in Chapter 7 of the report (those are
   design ideas, not code).
 
-## 9. Ablation (1536 tokens; mean of held-out seeds 11 to 13; synthetic workload, assumed latencies)
+## 9. Ablation (1536 tokens; synthetic workload, assumed latencies; see `docs/ablation_results.txt` for the full table)
 
-```
-variant                     resident/fp16  dropped_tok  rel_l2_mean  mass_recall  fetch_ms*  overflow_B
-v1_threshold_fp16                  0.368        970.7        0.506       0.750       0.919           0
-v2_planner_fp16                    1.000          0          0.081       0.945       1.04       256700   <- does not fit the budget
-v2_planner_int8_kivi4              0.372          0          0.116       0.945       0.115           0
-v2_planner_all_codecs              0.310          0          0.159       0.945       0.111           0
-```
+| variant | resident / FP16 | + key summaries | dropped tokens | rel. L2 error | fetch ms (model) |
+|---|---|---|---|---|---|
+| UAMM-1 threshold, FP16 | 0.37 | | 973 | 0.479 | 0.92 |
+| No planner, every block 4-bit | 0.364 | | 0 | 0.152 | 0.068 |
+| Planner, INT8 + KIVI-4 | 0.371 | | 0 | 0.122 | 0.116 |
+| Planner, all codecs | 0.310 | 0.435 | 0 | 0.166 | 0.112 |
+| Planner, FP16 only | does not fit (258 KB overflow) | | 0 | 0.092 | 1.04 |
 
-*Modelled fetch time per token, from the assumed constants.*
-
-Reading it: with this setup, the fixed-threshold UAMM-1 policy has to discard about 63% of the tokens to fit the budget, and
-loses most of the attention mass. FP16 alone cannot fit at all. Adding int8 and 4-bit codecs fits every token with modest
-error. Adding 2-bit saves a further 17% of memory for about 40% more error. That is a setting (`lambda_quality`, `codecs`),
-not a free gain. The full table is in `docs/ablation_results.txt`.
+Honest reading: a joint (tier, codec) choice lets 1,536 tokens fit a 168 KB budget that FP16 cannot, with no deleted tokens.
+A simple all-4-bit baseline does that too and is faster in the model. The planner gives lower error at equal memory, lower
+memory (with 2-bit) and feasibility in tighter budgets, not speed. The advantage depends on the budget being much smaller
+than the data (at 3x the budget FP16 fits and wins). The key min/max summaries are not charged in the main runs; when they
+are (E9), INT8 + KIVI-4 and all-4-bit overflow. Section 5.3 of the report lists every correction made to the first draft.

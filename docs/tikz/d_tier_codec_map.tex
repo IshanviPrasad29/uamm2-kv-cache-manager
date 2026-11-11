@@ -1,0 +1,31 @@
+\begin{tikzpicture}[line cap=round,line join=round]
+\draw[rounded corners=4.0pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,246;green,246;blue,246}] (0.136in,2.291in) rectangle (1.879in,3.869in);
+\draw[rounded corners=4.0pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,255;green,255;blue,255}] (0.136in,1.136in) rectangle (1.879in,2.098in);
+\draw[rounded corners=4.0pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,230;green,230;blue,230}] (0.136in,0.289in) rectangle (1.879in,0.943in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (1.883in,3.080in) -- (2.030in,3.080in);
+\draw[rounded corners=4.0pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,236;green,236;blue,236}] (2.034in,2.291in) rectangle (3.778in,3.869in);
+\draw[rounded corners=4.0pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,255;green,255;blue,255}] (2.034in,1.136in) rectangle (3.778in,2.098in);
+\draw[rounded corners=4.0pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,230;green,230;blue,230}] (2.034in,0.289in) rectangle (3.778in,0.943in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (3.782in,3.080in) -- (3.929in,3.080in);
+\draw[rounded corners=4.0pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,240;green,240;blue,240}] (3.933in,2.291in) rectangle (5.677in,3.869in);
+\draw[rounded corners=4.0pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,255;green,255;blue,255}] (3.933in,1.136in) rectangle (5.677in,2.098in);
+\draw[rounded corners=4.0pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,230;green,230;blue,230}] (3.933in,0.289in) rectangle (5.677in,0.943in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (5.681in,3.080in) -- (5.828in,3.080in);
+\draw[rounded corners=4.0pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,221;green,221;blue,221}] (5.832in,2.291in) rectangle (7.576in,3.869in);
+\draw[rounded corners=4.0pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,255;green,255;blue,255}] (5.832in,1.136in) rectangle (7.576in,2.098in);
+\draw[rounded corners=4.0pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,230;green,230;blue,230}] (5.832in,0.289in) rectangle (7.576in,0.943in);
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{10.0pt}{11.8pt}\selectfont\bfseries,inner sep=0pt] at (1.008in,3.080in) {T0 \\ SRAM / VRF window};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont,inner sep=0pt] at (1.008in,1.617in) {codecs: \\ protected: sink + recent \\ fp16, never moved};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.0pt}{9.4pt}\selectfont,inner sep=0pt] at (1.008in,0.616in) {capacity (default): 24 KB \\ base latency (assumed): 0.0005 ms};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{10.0pt}{11.8pt}\selectfont\bfseries,inner sep=0pt] at (2.906in,3.080in) {T1 \\ DRAM (hot)};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont,inner sep=0pt] at (2.906in,1.617in) {codecs: \\ any raw codec \\ (fp16..kivi2)};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.0pt}{9.4pt}\selectfont,inner sep=0pt] at (2.906in,0.616in) {capacity (default): 48 KB \\ base latency (assumed): 0.002 ms};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{10.0pt}{11.8pt}\selectfont\bfseries,inner sep=0pt] at (4.805in,3.080in) {T2 \\ DRAM (warm)};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont,inner sep=0pt] at (4.805in,1.617in) {codecs: \\ kivi4 | kivi2};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.0pt}{9.4pt}\selectfont,inner sep=0pt] at (4.805in,0.616in) {capacity (default): 32 KB \\ base latency (assumed): 0.002 ms};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{10.0pt}{11.8pt}\selectfont\bfseries,inner sep=0pt] at (6.704in,3.080in) {T3 \\ Flash};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont,inner sep=0pt] at (6.704in,1.617in) {codecs: \\ int8z | kivi4z | kivi2z \\ (zlib on the blob)};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.0pt}{9.4pt}\selectfont,inner sep=0pt] at (6.704in,0.616in) {capacity (default): 64 KB \\ base latency (assumed): 0.1 ms};
+\node[anchor=south,align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{12.0pt}{14.2pt}\selectfont\bfseries,inner sep=0pt] at (3.875in,4.119in) {Tier / codec map (a placement is a (tier, codec) pair)};
+\node[anchor=south,align=center,text={rgb,255:red,34;green,34;blue,34},font=\fontsize{9.0pt}{10.6pt}\selectfont,inner sep=0pt] at (3.875in,0.046in) {Left to right: faster, smaller, more precise  ->  slower, larger, more compressed};
+\end{tikzpicture}

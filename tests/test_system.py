@@ -124,3 +124,24 @@ def test_compiler_adapter_is_an_honest_skeleton():
 def test_invalid_run_args():
     with pytest.raises(ValueError):
         Simulator(Config()).run(0)
+
+
+def test_static_baseline_fits_without_dropping_and_uses_one_codec():
+    cfg = replace(Config(), policy="static", static_codec="kivi4", codecs=("fp16", "kivi4"),
+                  use_entropy_coding=False)
+    r = Simulator(cfg, seed=7).run(512)
+    assert r["dropped_tokens"] == 0
+    assert set(r["codec_blocks"]) <= {"fp16", "kivi4"}
+
+
+def test_capacity_aware_threshold_variant_runs_and_is_lossy_when_fp16_does_not_fit():
+    cfg = replace(Config(), policy="threshold", threshold_fill_fast=True, codecs=("fp16",),
+                  use_entropy_coding=False)
+    r = Simulator(cfg, seed=7).run(1024)
+    assert r["dropped_tokens"] > 0
+
+
+def test_summary_bytes_reported_and_positive():
+    r = Simulator(Config(), seed=7).run(256)
+    assert r["key_summary_bytes"] > 0
+    assert r["resident_with_summaries_vs_fp16"] > r["resident_vs_fp16"]

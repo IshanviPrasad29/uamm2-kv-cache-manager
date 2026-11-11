@@ -1,0 +1,24 @@
+\begin{tikzpicture}[line cap=round,line join=round]
+\draw[rounded corners=4.2pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,246;green,246;blue,246}] (0.142in,1.367in) rectangle (1.404in,2.329in);
+\draw[rounded corners=4.2pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,236;green,236;blue,236}] (1.770in,1.367in) rectangle (3.031in,2.329in);
+\draw[rounded corners=4.2pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,255;green,255;blue,255}] (3.397in,1.367in) rectangle (4.659in,2.329in);
+\draw[rounded corners=4.2pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,240;green,240;blue,240}] (5.025in,1.367in) rectangle (6.286in,2.329in);
+\draw[rounded corners=4.2pt,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34},fill={rgb,255:red,212;green,212;blue,212}] (6.652in,1.367in) rectangle (7.914in,2.329in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (1.408in,1.848in) -- (1.766in,1.848in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (3.035in,1.848in) -- (3.393in,1.848in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (4.663in,1.848in) -- (5.021in,1.848in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (6.290in,1.848in) -- (6.648in,1.848in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (5.656in,1.386in) -- (5.656in,0.693in);
+\draw[-latex,line width=1.82pt,draw={rgb,255:red,34;green,34;blue,34}] (5.656in,0.693in) -- (5.656in,1.386in);
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont\bfseries,inner sep=0pt] at (0.773in,1.848in) {OPEN \\ staging fp16 \\ T0, protected};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont\bfseries,inner sep=0pt] at (2.401in,1.848in) {SEALED \\ fp16 payload \\ T0};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont\bfseries,inner sep=0pt] at (4.028in,1.848in) {CALIBRATED \\ err\_table + \\ size\_table};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont\bfseries,inner sep=0pt] at (5.656in,1.848in) {PLACED \\ (tier, codec) \\ by planner};
+\node[align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{8.5pt}{10.0pt}\selectfont\bfseries,inner sep=0pt] at (7.283in,1.848in) {DROPPED \\ (opt-in) \\ H2O-style};
+\node[anchor=south west,align=left,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{7.5pt}{8.8pt}\selectfont,inner sep=0pt] at (1.587in,2.118in) {16th token};
+\node[anchor=south west,align=left,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{7.5pt}{8.8pt}\selectfont,inner sep=0pt] at (3.174in,2.118in) {encode x7 codecs};
+\node[anchor=south west,align=left,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{7.5pt}{8.8pt}\selectfont,inner sep=0pt] at (4.801in,2.118in) {plan pass};
+\node[anchor=south west,align=left,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{7.5pt}{8.8pt}\selectfont,inner sep=0pt] at (6.347in,2.118in) {no fit};
+\node[anchor=south west,align=left,text={rgb,255:red,34;green,34;blue,34},font=\fontsize{8.0pt}{9.4pt}\selectfont,inner sep=0pt] at (5.737in,0.616in) {re-plan: move tier or lower precision \\ (ratchet: precision never increases)};
+\node[anchor=south,align=center,text={rgb,255:red,0;green,0;blue,0},font=\fontsize{12.0pt}{14.2pt}\selectfont\bfseries,inner sep=0pt] at (4.069in,3.807in) {Block lifecycle};
+\end{tikzpicture}

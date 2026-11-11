@@ -121,6 +121,8 @@ class ThresholdPlanner:
         for b in sorted(movable, key=lambda x: -score(x)):
             s = score(b)
             target = 1 if s >= cfg.t1_threshold else (2 if s >= cfg.t2_threshold else 3)
+            if cfg.threshold_fill_fast:
+                target = 1                 # capacity-aware variant: best-scoring blocks take the fastest tier with room
             nbytes = b.payload.nbytes
             placed = False
             for t in range(target, len(cfg.tiers)):
@@ -134,5 +136,38 @@ class ThresholdPlanner:
         return plan
 
 
+class StaticPlanner:
+    """Baseline without a planner: every sealed, unprotected block is re-encoded once to one fixed codec
+    (cfg.static_codec) and placed, hottest (by H2O importance) first, in the fastest tier that still has room.
+    There is no cost model, no heat/error trade-off and no hysteresis. Blocks that fit nowhere stay where
+    they are and are reported as overflow (nothing is dropped), as in UtilityPlanner."""
+
+    def __init__(self, cfg: Config):
+        self.cfg = cfg
+
+    def plan(self, blocks: List[KVBlock], step: int) -> Plan:
+        cfg = self.cfg
+        cap = [s.capacity_bytes * (1.0 - cfg.capacity_headroom) for s in cfg.tiers]
+        used = _fixed_usage(cfg, blocks)
+        movable = [b for b in blocks if b.sealed and not b.protected and not b.dropped]
+        movable.sort(key=lambda b: -b.importance)
+        plan: Plan = {}
+        for b in movable:
+            c = cfg.static_codec if codec_rank(cfg.static_codec) >= b.rank else b.codec
+            nbytes = b.payload.nbytes if c == b.codec else b.size_table[c]
+            for t in range(1, len(cfg.tiers)):
+                if codec_allowed(t, c) and used[t] + nbytes <= cap[t]:
+                    used[t] += nbytes
+                    plan[b.block_id] = (t, c)
+                    break
+            else:
+                used[b.tier] += b.nbytes(cfg.head_dim)
+        return plan
+
+
 def make_planner(cfg: Config):
-    return UtilityPlanner(cfg) if cfg.policy == "utility" else ThresholdPlanner(cfg)
+    if cfg.policy == "utility":
+        return UtilityPlanner(cfg)
+    if cfg.policy == "static":
+        return StaticPlanner(cfg)
+    return ThresholdPlanner(cfg)

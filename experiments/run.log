@@ -10,7 +10,13 @@ saved e4_aggregation
 saved e4_blocksize
 saved e5_capacity
 saved e5b_codecsets
+saved e9_summary_charged
+saved e10_static_vs_planner
 saved e6_traces
 saved e7_codecs
 saved e8_attention
-done in 284.9s
+done in 349.8s
+
+real	5m49.930s
+user	11m2.475s
+sys	0m1.076s

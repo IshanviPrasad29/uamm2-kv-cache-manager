@@ -9,9 +9,9 @@ from matplotlib.patches import FancyBboxPatch, FancyArrowPatch, Rectangle   # no
 FIG = Path(__file__).resolve().parent.parent / "docs" / "figs"
 FIG.mkdir(parents=True, exist_ok=True)
 
-C = {"blue": "#222222", "lblue": "#e6e6e6", "green": "#2f855a", "lgreen": "#dcfce7", "orange": "#c05621",
-     "lorange": "#ffedd5", "purple": "#6b46c1", "lpurple": "#ede9fe", "gray": "#4a5568", "lgray": "#f1f5f9",
-     "red": "#c53030", "lred": "#fee2e2", "yellow": "#b7791f", "lyellow": "#fef9c3"}
+C = {"blue": "#222222", "lblue": "#ececec", "green": "#222222", "lgreen": "#f6f6f6", "orange": "#222222",
+     "lorange": "#dddddd", "purple": "#222222", "lpurple": "#f0f0f0", "gray": "#222222", "lgray": "#e6e6e6",
+     "red": "#222222", "lred": "#d4d4d4", "yellow": "#222222", "lyellow": "#ffffff"}
 
 
 def canvas(w=10, h=6, xlim=(0, 100), ylim=(0, 60)):
@@ -22,7 +22,7 @@ def canvas(w=10, h=6, xlim=(0, 100), ylim=(0, 60)):
 
 def box(ax, x, y, w, h, text, fc="lblue", ec="blue", fs=9, bold=False, tc="black", ls="-"):
     p = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.25,rounding_size=1.2", fc=C.get(fc, fc),
-                       ec=C.get(ec, ec), lw=1.4, ls=ls)
+                       ec=C.get(ec, ec), lw=1.8, ls=ls)
     ax.add_patch(p)
     ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=fs,
             fontweight="bold" if bold else "normal", color=tc, wrap=True)
@@ -30,7 +30,7 @@ def box(ax, x, y, w, h, text, fc="lblue", ec="blue", fs=9, bold=False, tc="black
 
 def arrow(ax, x1, y1, x2, y2, text=None, color="gray", style="-|>", fs=7.5, ls="-", rad=0.0, tdx=0, tdy=1.2):
     a = FancyArrowPatch((x1, y1), (x2, y2), arrowstyle=style, mutation_scale=12, color=C.get(color, color),
-                        lw=1.4, ls=ls, connectionstyle=f"arc3,rad={rad}")
+                        lw=1.8, ls=ls, connectionstyle=f"arc3,rad={rad}")
     ax.add_patch(a)
     if text:
         ax.text((x1 + x2) / 2 + tdx, (y1 + y2) / 2 + tdy, text, ha="center", va="center", fontsize=fs,
@@ -147,15 +147,15 @@ def d_quant_axes():
     fig, axs = plt.subplots(1, 3, figsize=(11, 3.6))
     K = rng.normal(size=(16, 24)) * 0.5
     K[:, 5] *= 8; K[:, 17] *= 6
-    axs[0].imshow(abs(K), cmap="viridis", aspect="auto"); axs[0].set_title("Key block |K| (tokens x channels)\nchannels 5 and 17 are outliers", fontsize=9)
+    axs[0].imshow(abs(K), cmap="Greys", aspect="auto"); axs[0].set_title("Key block |K| (tokens x channels)\nchannels 5 and 17 are outliers", fontsize=9)
     axs[0].set_xlabel("channel"); axs[0].set_ylabel("token")
     for t in range(16):
         axs[1].add_patch(Rectangle((0, t), 24, 1, fc="none", ec=C["red"], lw=0.8))
-    axs[1].imshow(abs(K), cmap="viridis", aspect="auto"); axs[1].set_title("Per-TOKEN groups (rows)\nthe outlier channel inflates every row's range", fontsize=9)
+    axs[1].imshow(abs(K), cmap="Greys", aspect="auto"); axs[1].set_title("Per-TOKEN groups (rows)\nthe outlier channel inflates every row's range", fontsize=9)
     axs[1].set_xlabel("channel")
     for c in range(24):
         axs[2].add_patch(Rectangle((c, 0), 1, 16, fc="none", ec=C["green"], lw=0.8))
-    axs[2].imshow(abs(K), cmap="viridis", aspect="auto"); axs[2].set_title("Per-CHANNEL groups (columns), used for keys\noutliers get their own scale", fontsize=9)
+    axs[2].imshow(abs(K), cmap="Greys", aspect="auto"); axs[2].set_title("Per-CHANNEL groups (columns), used for keys\noutliers get their own scale", fontsize=9)
     axs[2].set_xlabel("channel")
     for a in axs:
         a.set_xlim(0, 24); a.set_ylim(16, 0)
@@ -264,6 +264,67 @@ def d_integration_levels():
         arrow(ax, x, 28, x, 20.5, style="<|-|>")
     ax.set_title("Separation of concerns", fontsize=12, fontweight="bold")
     save(fig, "d_separation_of_concerns.png")
+
+
+def _rect(ax, x, y, w, h, text, fs=13, fc="white", bold=False, lw=1.8):
+    ax.add_patch(Rectangle((x, y), w, h, fc=fc, ec="#222222", lw=lw))
+    ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=fs, fontweight="bold" if bold else "normal", linespacing=1.3)
+
+
+def _diamond(ax, cx, cy, w, h, text, fs=12.5):
+    ax.add_patch(plt.Polygon([(cx, cy + h / 2), (cx + w / 2, cy), (cx, cy - h / 2), (cx - w / 2, cy)], fc="#f3f3f3", ec="#222222", lw=1.8))
+    ax.text(cx, cy, text, ha="center", va="center", fontsize=fs, linespacing=1.3)
+
+
+def _arr(ax, x1, y1, x2, y2, label=None, fs=12, dx=0, dy=0):
+    ax.annotate("", xy=(x2, y2), xytext=(x1, y1), arrowprops=dict(arrowstyle="-|>", color="#222222", lw=1.8, mutation_scale=16))
+    if label:
+        ax.text((x1 + x2) / 2 + dx, (y1 + y2) / 2 + dy, label, fontsize=fs, ha="center", va="center", style="italic")
+
+
+def d_planner():
+    fig, ax = canvas(8.4, 10.4, xlim=(0, 84), ylim=(0, 104))
+    _rect(ax, 22, 94, 40, 8, "Every 8 decode steps\n(plan interval)", 13, "#e8e8e8", True)
+    _rect(ax, 22, 80, 40, 9, "Update the importance of\nevery block (H2O scores)", 13)
+    _rect(ax, 22, 66, 40, 9, "Keep the sink and recent\nblocks fixed in T0, FP16", 13)
+    _rect(ax, 22, 52, 40, 9, "Sort the other blocks,\nhottest first", 13)
+    _rect(ax, 22, 36, 40, 11, "For each block, try every\n(tier, codec) that has room\nand does not raise precision", 13)
+    _rect(ax, 22, 20, 40, 11, "Cost = read + decode time\n+ error penalty + congestion\nPick the cheapest", 13, "#f3f3f3")
+    _diamond(ax, 42, 9.5, 36, 14, "Clearly better than\nthe current spot?")
+    _arr(ax, 42, 94, 42, 89.3); _arr(ax, 42, 80, 42, 75.3); _arr(ax, 42, 66, 42, 61.3)
+    _arr(ax, 42, 52, 42, 47.3); _arr(ax, 42, 36, 42, 31.3); _arr(ax, 42, 20, 42, 16.7)
+    _rect(ax, 62, 3, 21, 13, "Yes: re-encode\nif needed, move,\ncharge the cost", 12, "#e8e8e8")
+    _rect(ax, 1, 3, 20, 13, "No: leave the\nblock where\nit is", 12, "#e8e8e8")
+    _arr(ax, 60, 9.5, 62, 9.5, "yes", 12, 0, 2.2); _arr(ax, 24, 9.5, 21, 9.5, "no", 12, 0, 2.2)
+    save(fig, "d_planner_flow.png")
+
+
+def d_decode_step():
+    fig, ax = canvas(11, 6.4, xlim=(0, 110), ylim=(0, 64))
+    steps = ["1  Append the\nnew token's\nK and V", "2  Mark sink and\nrecent blocks\nas protected", "3  Rank blocks\nwith the min/max\nbound, keep top 24",
+             "4  Fetch and decode\nthe chosen blocks", "5  Attention:\nsoftmax(QK) V", "6  Update H2O\nscores"]
+    for i, t in enumerate(steps):
+        x = 2 + (i % 3) * 36
+        y = 38 if i < 3 else 8
+        _rect(ax, x, y, 30, 18, t, 12.5)
+        if i in (0, 1, 3, 4):
+            _arr(ax, x + 30, y + 9, x + 36, y + 9)
+    _arr(ax, 90, 38, 90, 33.5); ax.plot([90, 17], [33.5, 33.5], color="#222222", lw=1.8); _arr(ax, 17, 33.5, 17, 26.3)
+    ax.text(55, 61, "One decode step in UAMM-2", fontsize=14, fontweight="bold", ha="center")
+    ax.text(55, 2.2, "Blocks that are not chosen in step 3 are never fetched or decoded. Every 8 steps the planner runs.", fontsize=11, ha="center", style="italic")
+    save(fig, "d_decode_step.png")
+
+
+def d_memory_hier():
+    fig, ax = canvas(9.4, 6.4, xlim=(0, 94), ylim=(0, 64))
+    levels = [("Registers / vector registers", "a few KB", "~TB/s"), ("On-chip SRAM", "100 KB to a few MB", "100s of GB/s"),
+              ("DRAM (LPDDR)", "a few GB", "10s of GB/s"), ("Flash", "tens to hundreds of GB", "about 1 GB/s")]
+    for i, (n, cap, bw) in enumerate(levels):
+        w = 34 + i * 17; x = 47 - w / 2; y = 49 - i * 14
+        _rect(ax, x, y, w, 11, f"{n}\n{cap}  |  {bw}", 12.5, ["#e8e8e8", "#f3f3f3", "#ffffff", "#f3f3f3"][i], True if i == 0 else False)
+    ax.text(47, 62, "Typical edge memory hierarchy (schematic)", ha="center", fontsize=13.5, fontweight="bold")
+    ax.text(47, 1.5, "Each step down: about 10x more capacity, 10x less bandwidth, much higher latency", ha="center", fontsize=11, style="italic")
+    save(fig, "d_memory_hierarchy.png")
 
 
 if __name__ == "__main__":

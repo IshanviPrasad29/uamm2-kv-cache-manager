@@ -13,7 +13,7 @@ def main(argv=None):
 
     s = sub.add_parser("simulate", help="run one configuration")
     s.add_argument("--tokens", type=int, default=1024)
-    s.add_argument("--policy", choices=["utility", "threshold"], default="utility")
+    s.add_argument("--policy", choices=["utility", "threshold", "static"], default="utility")
     s.add_argument("--seed", type=int, default=7)
     s.add_argument("--block-size", type=int, default=16)
     s.add_argument("--attn-blocks", type=int, default=24)

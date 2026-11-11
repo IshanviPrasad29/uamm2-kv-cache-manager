@@ -1,8 +1,12 @@
-Ablation, 1536 tokens, mean over HELD-OUT seeds (11, 12, 13) (lambda tuned on seeds 7-9)
-variant                     resident/fp16    dropped_tok    rel_l2_mean     rel_l2_p95    mass_recall      fetch_ms*    flash_reads     overflow_B
-v1_threshold_fp16                  0.3681          970.7         0.5055          1.359         0.7502         0.9191      1.256e+04              0
-v2_planner_fp16                         1              0         0.0814         0.2916         0.9454           1.04      1.435e+04      2.567e+05
-v2_planner_int8_kivi4              0.3721              0         0.1157         0.3275         0.9454         0.1153          966.3              0
-v2_planner_all_codecs              0.3096              0         0.1592         0.5361         0.9454         0.1112          907.7              0
-v2_all_codecs_with_drop            0.3096              0         0.1592         0.5361         0.9454         0.1112          907.7              0
-* fetch_ms is simulated with ASSUMED latency constants on a SYNTHETIC workload; overflow_B>0 = infeasible within tier budget
+Ablation and baselines, 1536 tokens, mean over seeds 11-15 (lambda was tuned on seeds 7-9)
+variant                      res/fp16    res+summ     dropped     l2_mean      l2_p95      recall   fetch_ms*        migr    flash_rd  overflow_B
+v1_threshold_fp16              0.3667      0.4125       972.8      0.4789       1.288      0.7581      0.9229       744.8   1.261e+04           0
+v1_capacity_aware_fp16         0.4062       0.457         912      0.4056       1.142      0.7917      0.6181         883        8205           0
+static_kivi4_no_planner        0.3643      0.4893           0      0.1519      0.3679      0.9389     0.06814       694.2         270           0
+static_kivi2_no_planner        0.2432      0.3682           0      0.5716       1.022      0.9389      0.0493       309.8           0           0
+v2_planner_fp16                     1       1.125           0     0.09209      0.3312      0.9389       1.041       628.6   1.436e+04    2.58e+05
+v2_planner_int8_kivi4          0.3711      0.4961           0      0.1224      0.3614      0.9389      0.1156       698.6       969.6           0
+v2_planner_all_codecs          0.3101      0.4351           0      0.1662      0.5709      0.9389      0.1117       644.4         915           0
+v2_all_codecs_with_drop        0.3101      0.4351           0      0.1662      0.5709      0.9389      0.1117       644.4         915           0
+* fetch_ms is simulated with ASSUMED latency constants on a SYNTHETIC workload; overflow_B>0 = does not fit the tier budget.
+res+summ counts the per-block key min/max summaries (not charged to the tiers in the main experiments).
